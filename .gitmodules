@@ -1,0 +1,3 @@
+[submodule "reid_dataset"]
+	path = reid_dataset
+	url = https://github.com/LinShanify/reid_dataset.git
