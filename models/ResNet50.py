@@ -1,10 +1,10 @@
 import torch
-import torch.nn as nn
+from torch import nn
+from torch.nn import functional as F
 from torch.nn import init
 from torchvision import models
+from .BasicModule import BasicModule
 
-
-######################################################################
 def weights_init_kaiming(m):
     classname = m.__class__.__name__
     # print(classname)
@@ -22,11 +22,16 @@ def weights_init_classifier(m):
     if classname.find('Linear') != -1:
         init.normal(m.weight.data, std=0.001)
         init.constant(m.bias.data, 0.0)
-
-class ft_net(nn.Module):
-
-    def __init__(self, class_num ):
-        super().__init__()
+        
+class ResNet50(BasicModule):
+    '''
+    实现主module：ResNet34
+    ResNet34包含多个layer，每个layer又包含多个Residual block
+    用子module来实现Residual block，用_make_layer函数来实现layer
+    '''
+    def __init__(self, class_num):
+        super(ResNet50, self).__init__()
+        self.model_name = 'resnet50'
         model_ft = models.resnet50(pretrained=True)
 
         # avg pooling to global pooling
@@ -50,9 +55,8 @@ class ft_net(nn.Module):
         classifier = nn.Sequential(*classifier)
         classifier.apply(weights_init_classifier)
         self.classifier = classifier
-
+        
     def forward(self, x):
         x = self.model(x)
         x = self.classifier(x)
         return x
-

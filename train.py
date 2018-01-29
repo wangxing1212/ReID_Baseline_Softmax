@@ -3,7 +3,6 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.optim import lr_scheduler
 from torch.autograd import Variable
-from utils import save_network
 def train(model, dataloaders, dataset_sizes, criterion, optimizer, scheduler, num_epochs, save_dir,save_rate):
     for epoch in range(num_epochs):
         print('Epoch {}/{}'.format(epoch+1, num_epochs))
@@ -45,4 +44,4 @@ def train(model, dataloaders, dataset_sizes, criterion, optimizer, scheduler, nu
             
             if phase == 'val':
                 if (epoch+1)%save_rate == 0:
-                    save_network(model, epoch+1, save_dir)
+                    model.save(epoch+1)
