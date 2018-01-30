@@ -12,17 +12,19 @@ from PIL import Image
 import time
 import os
 import models
-from reid_dataset import *
+from reid_dataset import download_dataset
+from reid_dataset import pytorch_prepare
 from config import opt
 from tqdm import tqdm
-
-def download_preprocess(**kwargs):
-    opt.parse(kwargs)
-    download_dataset(opt.dataset_name, opt.data_dir)
-    pytorch_prepare(opt.dataset_name, opt.data_dir)
+from visdom import Visdom
+viz = Visdom()
 
 def dataset_process(**kwargs):
-    
+    opt.parse(kwargs)
+    print('-'*40)
+    download_dataset(opt.dataset_name, opt.data_dir)
+    pytorch_prepare(opt.dataset_name, opt.data_dir)
+    print('-'*40)
     transform_train_list = [
             transforms.Resize(144),
             transforms.RandomCrop((256,128)),
@@ -55,33 +57,65 @@ def dataset_process(**kwargs):
     train_dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=opt.batch_size,
                                                     shuffle=True, num_workers=4)
                                                   for x in ['train', 'val']}
-
     test_dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=opt.batch_size,
                                                     shuffle=False, num_workers=4)
                                                   for x in ['query','gallery']}
+    
     dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'val','query','gallery']}
     classes = image_datasets['train'].classes  
+    
     return image_datasets,train_dataloaders,test_dataloaders,dataset_sizes,classes
 
 def train(**kwargs):
-    opt.parse(kwargs)
-    
-    download_preprocess()
+
     image_datasets,train_dataloaders,test_dataloaders,dataset_sizes,classes = dataset_process()
     
+    opt.parse(kwargs,show_config=True)
+        
     model = getattr(models, opt.model)(len(classes))
     
-    if opt.load_model_path:
-        model.load(opt.load_model_path)
     model.cuda()
     
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(model.parameters(), lr = 0.01, momentum=0.9, weight_decay=5e-4, nesterov=True)
-    exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=40, gamma=0.1)
     
+    optimizer = optim.SGD(model.parameters(), 
+                          lr = opt.lr, 
+                          momentum=opt.momentum, 
+                          weight_decay=opt.weight_decay, 
+                          nesterov=opt.nesterov)
+    
+    exp_lr_scheduler = lr_scheduler.StepLR(optimizer, 
+                                           step_size=opt.scheduler_step, 
+                                           gamma=opt.scheduler_gamma)
+    
+    vis_epoch = np.array([0])
+    train_loss = np.array([1])
+    train_acc = np.array([0])
+    val_loss = np.array([1])
+    val_acc = np.array([0])
+    
+    
+    visdom_loss = viz.line(
+        Y=np.column_stack((train_loss,train_acc,val_loss, val_acc)),
+        X=np.column_stack((vis_epoch, vis_epoch, vis_epoch, vis_epoch)),
+        opts=dict(
+            legend=['train_loss', 'train_acc','val_loss','val_acc'],
+            fillarea=False,
+            showlegend=False,
+            xlabel='Epochs',
+            ylabel='Loss',
+            title='Training Loss',
+        ),
+    )
+    since = time.time()
     for epoch in range(opt.num_epochs):
+        print('-'*10)
         print('Epoch {}/{}'.format(epoch+1, opt.num_epochs))
-        print('-' * 10)
+        
+        train_epoch_loss = 0.0
+        train_epoch_acc = 0.0
+        val_epoch_loss = 0.0
+        val_epoch_loss = 0.0
         
         for phase in ['train','val']:
             if phase == 'train':
@@ -114,14 +148,34 @@ def train(**kwargs):
                 
             epoch_loss = running_loss / dataset_sizes[phase]
             epoch_acc = running_corrects / dataset_sizes[phase]
-            
             print('{} Loss: {:.4f} Acc: {:.4f}'.format(phase, epoch_loss, epoch_acc))
-            
-            if phase == 'val':
+                        
+            if phase == 'train':
+                train_epoch_loss = epoch_loss
+                train_epoch_acc = epoch_acc
+            else:
+                val_epoch_loss = epoch_loss
+                val_epoch_acc = epoch_acc
+                
                 if (epoch+1)%opt.save_rate == 0:
                     model.save(opt.dataset_name,epoch+1)
-
-#train()
+        
+        vis_epoch = np.array([epoch+1])
+        train_loss = np.array([train_epoch_loss])
+        train_acc = np.array([train_epoch_acc])
+        val_loss = np.array([val_epoch_loss])
+        val_acc = np.array([val_epoch_acc])
+                
+        viz.line(
+        Y=np.column_stack((train_loss,train_acc,val_loss, val_acc)),
+        X=np.column_stack((vis_epoch, vis_epoch, vis_epoch, vis_epoch)),
+        win=visdom_loss,
+        update='append'
+        )
+    time_elapsed = time.time() - since
+    print('Training complete in {:.0f}m {:.0f}s'.format(
+        time_elapsed // 60, time_elapsed % 60))
+            
 
 def fliplr(img):
     '''flip horizontal'''
@@ -211,9 +265,10 @@ def evaluate(qf,ql,qc,gf,gl,gc):
     return ap, cmc
 
 def test(**kwargs):
-    opt.parse(kwargs)
     
     image_datasets,train_dataloaders,test_dataloaders,dataset_sizes,classes = dataset_process()
+    
+    opt.parse(kwargs, show_config = True)
     
     gallery_path = image_datasets['gallery'].imgs
     query_path = image_datasets['query'].imgs
@@ -222,7 +277,7 @@ def test(**kwargs):
     query_cam,query_label = get_id(query_path)
     
     model = getattr(models, opt.model)(len(classes))
-    model.load('Market1501', 60)
+    model.load(opt.dataset_name, opt.load_epoch_label)
     
     # Remove the final fc layer and classifier layer
     model.model.fc = nn.Sequential()
@@ -233,11 +288,12 @@ def test(**kwargs):
     model = model.cuda()
     
     # Extract feature
+    print('---------------------------')
     print('Extracting query features')
     query_feature = extract_feature(model,test_dataloaders['query'],'query')
     query_feature = query_feature.numpy()
     
-    print('-------------------------')
+    print('---------------------------')
     print('Extracting gallery features')
     gallery_feature = extract_feature(model,test_dataloaders['gallery'],'gallery')
     gallery_feature = gallery_feature.numpy()
@@ -245,6 +301,7 @@ def test(**kwargs):
     
     CMC = torch.IntTensor(len(gallery_label)).zero_()
     ap = 0.0
+    print('-----------------------')
     print('Calculating CMC and mAP')
     for i in tqdm(range(len(query_label))):
         ap_tmp, CMC_tmp = evaluate(query_feature[i],query_label[i],query_cam[i],gallery_feature,gallery_label,gallery_cam)
@@ -252,7 +309,6 @@ def test(**kwargs):
             continue
         CMC = CMC + CMC_tmp
         ap += ap_tmp
-        #print(i, CMC_tmp[0])
 
     CMC = CMC.float()
     CMC = CMC/len(query_label) #average CMC
