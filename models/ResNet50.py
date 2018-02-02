@@ -4,6 +4,7 @@ from torch.nn import functional as F
 from torch.nn import init
 from torchvision import models
 from .BasicModule import BasicModule
+from config import opt
 
 def weights_init_kaiming(m):
     classname = m.__class__.__name__
@@ -24,14 +25,13 @@ def weights_init_classifier(m):
         init.constant(m.bias.data, 0.0)
         
 class ResNet50(BasicModule):
-    '''
-    实现主module：ResNet34
-    ResNet34包含多个layer，每个layer又包含多个Residual block
-    用子module来实现Residual block，用_make_layer函数来实现layer
-    '''
-    def __init__(self, class_num):
+    def __init__(self, class_num,**kwargs):
+        opt.parse(kwargs)
         super(ResNet50, self).__init__()
         self.model_name = 'resnet50'
+        self.dataset_name = opt.dataset_name
+        self.scheduler_step = opt.scheduler_step
+        
         model_ft = models.resnet50(pretrained=True)
 
         # avg pooling to global pooling

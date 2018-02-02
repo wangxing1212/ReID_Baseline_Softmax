@@ -15,16 +15,23 @@ import models
 from reid_dataset import download_dataset
 from reid_dataset import pytorch_prepare
 from config import opt
+from evaluation import *
 from tqdm import tqdm
 from visdom import Visdom
+from re_ranking import re_ranking
+from re_ranking import re_evaluate
 viz = Visdom()
 
+################
+#dataset_process
+################
 def dataset_process(**kwargs):
     opt.parse(kwargs)
     print('-'*40)
     download_dataset(opt.dataset_name, opt.data_dir)
     pytorch_prepare(opt.dataset_name, opt.data_dir)
     print('-'*40)
+
     transform_train_list = [
             transforms.Resize(144),
             transforms.RandomCrop((256,128)),
@@ -66,11 +73,18 @@ def dataset_process(**kwargs):
     
     return image_datasets,train_dataloaders,test_dataloaders,dataset_sizes,classes
 
-def train(**kwargs):
 
-    image_datasets,train_dataloaders,test_dataloaders,dataset_sizes,classes = dataset_process()
-    
+################
+#Train
+################
+def train(**kwargs):
     opt.parse(kwargs,show_config=True)
+
+    (image_datasets,
+     train_dataloaders,
+     test_dataloaders,
+     dataset_sizes,
+     classes) = dataset_process()
         
     model = getattr(models, opt.model)(len(classes))
     
@@ -104,12 +118,12 @@ def train(**kwargs):
             showlegend=False,
             xlabel='Epochs',
             ylabel='Loss',
-            title='Training Loss',
+            title=opt.dataset_name + ' Training Loss',
         ),
     )
     since = time.time()
     for epoch in range(opt.num_epochs):
-        print('-'*10)
+        
         print('Epoch {}/{}'.format(epoch+1, opt.num_epochs))
         
         train_epoch_loss = 0.0
@@ -158,7 +172,7 @@ def train(**kwargs):
                 val_epoch_acc = epoch_acc
                 
                 if (epoch+1)%opt.save_rate == 0:
-                    model.save(opt.dataset_name,epoch+1)
+                    model.save(epoch+1)
         
         vis_epoch = np.array([epoch+1])
         train_loss = np.array([train_epoch_loss])
@@ -172,103 +186,23 @@ def train(**kwargs):
         win=visdom_loss,
         update='append'
         )
+        
+        print('-'*10)
+        
     time_elapsed = time.time() - since
     print('Training complete in {:.0f}m {:.0f}s'.format(
         time_elapsed // 60, time_elapsed % 60))
             
-
-def fliplr(img):
-    '''flip horizontal'''
-    inv_idx = torch.arange(img.size(3)-1,-1,-1).long()  # N x C x H x W
-    img_flip = img.index_select(3,inv_idx)
-    return img_flip
-
-def extract_feature(model,dataloaders,query_gallery):
-    features = torch.FloatTensor()
-    count = 0
-    for data in tqdm(dataloaders):
-        img, label = data
-        n, c, h, w = img.size()
-        count += n
-        #print(count)
-        ff = torch.FloatTensor(n,2048).zero_()
-        for i in range(2):
-            if(i==1):
-                img = fliplr(img)
-            input_img = Variable(img.cuda())
-            outputs = model(input_img) 
-            f = outputs.data.cpu()
-            #print(f.size())
-            ff = ff+f
-        # norm feature
-        fnorm = torch.norm(ff, p=2, dim=1, keepdim=True)
-        ff = ff.div(fnorm.expand_as(ff))
-        features = torch.cat((features,ff), 0)
-    return features
-
-def get_id(img_path):
-    camera_id = []
-    labels = []
-    for path, v in img_path:
-        filename = path.split('/')[-1]
-        label = filename[0:4]
-        camera = filename.split('c')[1]
-        if label[0:2]=='-1':
-            labels.append(-1)
-        else:
-            labels.append(int(label))
-        camera_id.append(int(camera[0]))
-    return camera_id, labels
-
-def evaluate(qf,ql,qc,gf,gl,gc):
-    query = qf
-    score = np.dot(gf,query)
-    # predict index
-    index = np.argsort(score)  #from small to large
-    index = index[::-1]
-    #index = index[0:2000]
-    # good index
-    query_index = np.asarray(np.where(np.asarray(gl)==ql)).flatten()
-    camera_index = np.asarray(np.where(np.asarray(gc)==qc)).flatten()
-
-    good_index = np.setdiff1d(query_index, camera_index, assume_unique=True)
-    junk_index1 = np.asarray(np.where(np.asarray(gl)==-1)).flatten()
-    junk_index2 = np.intersect1d(query_index, camera_index)
-    junk_index = np.append(junk_index2, junk_index1) #.flatten())
-    
-    ap = 0
-    cmc = torch.IntTensor(len(index)).zero_()
-    if good_index.size==0:   # if empty
-        cmc[0] = -1
-        return ap,cmc
-
-    # remove junk_index
-    mask = np.in1d(index, junk_index, invert=True)
-    index = index[mask]
-
-    # find good_index index
-    ngood = len(good_index)
-    mask = np.in1d(index, good_index)
-    rows_good = np.asarray(np.where(mask==True))
-    rows_good = rows_good.flatten()
-    
-    cmc[rows_good[0]:] = 1
-    for i in range(ngood):
-        d_recall = 1.0/ngood
-        precision = (i+1)*1.0/(rows_good[i]+1)
-        if rows_good[i]!=0:
-            old_precision = i*1.0/rows_good[i]
-        else:
-            old_precision=1.0
-        ap = ap + d_recall*(old_precision + precision)/2
-        
-    return ap, cmc
-
+################
+#Test
+################
 def test(**kwargs):
-    
-    image_datasets,train_dataloaders,test_dataloaders,dataset_sizes,classes = dataset_process()
-    
     opt.parse(kwargs, show_config = True)
+    
+    (image_datasets,
+     train_dataloaders,
+     test_dataloaders,
+     dataset_sizes,classes) = dataset_process()
     
     gallery_path = image_datasets['gallery'].imgs
     query_path = image_datasets['query'].imgs
@@ -277,7 +211,7 @@ def test(**kwargs):
     query_cam,query_label = get_id(query_path)
     
     model = getattr(models, opt.model)(len(classes))
-    model.load(opt.dataset_name, opt.load_epoch_label)
+    model.load(opt.load_epoch_label)
     
     # Remove the final fc layer and classifier layer
     model.model.fc = nn.Sequential()
@@ -288,7 +222,6 @@ def test(**kwargs):
     model = model.cuda()
     
     # Extract feature
-    print('---------------------------')
     print('Extracting query features')
     query_feature = extract_feature(model,test_dataloaders['query'],'query')
     query_feature = query_feature.numpy()
@@ -313,6 +246,72 @@ def test(**kwargs):
     CMC = CMC.float()
     CMC = CMC/len(query_label) #average CMC
     print('top1:%f top5:%f top10:%f mAP:%f'%(CMC[0],CMC[4],CMC[9],ap/len(query_label)))
+
+################
+#Test
+################
+def test_rerank(**kwargs):
+    opt.parse(kwargs, show_config = True)
+    
+    (image_datasets,
+     train_dataloaders,
+     test_dataloaders,
+     dataset_sizes,classes) = dataset_process()
+    
+    gallery_path = image_datasets['gallery'].imgs
+    query_path = image_datasets['query'].imgs
+
+    gallery_cam,gallery_label = get_id(gallery_path)
+    query_cam,query_label = get_id(query_path)
+    
+    model = getattr(models, opt.model)(len(classes))
+    model.load(opt.load_epoch_label)
+    
+    # Remove the final fc layer and classifier layer
+    model.model.fc = nn.Sequential()
+    model.classifier = nn.Sequential()
+    
+    # Change to test mode
+    model = model.eval()
+    model = model.cuda()
+    
+    # Extract feature
+    print('Extracting query features')
+    query_feature = extract_feature(model,test_dataloaders['query'],'query')
+    query_feature = query_feature.numpy()
+    
+    print('---------------------------')
+    print('Extracting gallery features')
+    gallery_feature = extract_feature(model,test_dataloaders['gallery'],'gallery')
+    gallery_feature = gallery_feature.numpy()
+   
+    
+    CMC = torch.IntTensor(len(gallery_label)).zero_()
+    ap = 0.0
+    #re-ranking
+    print('calculate initial distance')
+    q_g_dist = np.dot(query_feature, np.transpose(gallery_feature))
+    q_q_dist = np.dot(query_feature, np.transpose(query_feature))
+    g_g_dist = np.dot(gallery_feature, np.transpose(gallery_feature))
+    print('start re-ranking...')
+    since = time.time()
+    re_rank = re_ranking(q_g_dist, q_q_dist, g_g_dist)
+    time_elapsed = time.time() - since
+    print('Reranking complete in {:.0f}m {:.0f}s'.format(
+            time_elapsed // 60, time_elapsed % 60))
+    print('-----------------------')
+    for i in tqdm(range(len(query_label))):
+        ap_tmp, CMC_tmp = re_evaluate(re_rank[i,:],query_label[i],query_cam[i],gallery_label,gallery_cam)
+        if CMC_tmp[0]==-1:
+            continue
+        CMC = CMC + CMC_tmp
+        ap += ap_tmp
+        #print(i, CMC_tmp[0])
+
+    CMC = CMC.float()
+    CMC = CMC/len(query_label) #average CMC
+    print('top1:%f top5:%f top10:%f mAP:%f'%(CMC[0],CMC[4],CMC[9],ap/len(query_label)))
+
     
 if __name__=='__main__':
     import fire

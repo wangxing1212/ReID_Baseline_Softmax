@@ -3,10 +3,10 @@ class DefaultConfig(object):
     data_dir = '/home/linshan/Datasets/'
     dataset_name = 'Market1501'
     batch_size = 32
-    num_epochs = 60
+    num_epochs = 50
     save_rate = 10
     model = 'ResNet50'
-    load_epoch_label = 60
+    load_epoch_label = 50
     lr =0.01
     momentum = 0.9
     weight_decay = 5e-4
