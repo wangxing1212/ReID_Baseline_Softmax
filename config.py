@@ -1,5 +1,6 @@
 import warnings
 class DefaultConfig(object):
+    env = 'reid_baseline' # visdom 环境
     data_dir = '/home/linshan/Datasets/'
     dataset_name = 'Market1501'
     batch_size = 32
@@ -13,6 +14,7 @@ class DefaultConfig(object):
     nesterov = True
     scheduler_step = 40
     scheduler_gamma = 0.1
+    train_all = True
 
 def parse(self,kwargs,show_config=False):
     '''
@@ -25,7 +27,7 @@ def parse(self,kwargs,show_config=False):
     
     if show_config == True:
         print('Current Configuration:')
-        for k,v in self.__class__.__dict__.items():
+        for k,v in sorted(self.__class__.__dict__.items()):
             if not k.startswith('__'):
                 if k != 'parse':
                     print(k,': ',getattr(self,k))

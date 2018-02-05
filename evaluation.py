@@ -9,35 +9,6 @@ import numpy as np
 import models
 from tqdm import tqdm
 
-def fliplr(img):
-    '''flip horizontal'''
-    inv_idx = torch.arange(img.size(3)-1,-1,-1).long()  # N x C x H x W
-    img_flip = img.index_select(3,inv_idx)
-    return img_flip
-
-def extract_feature(model,dataloaders,query_gallery):
-    features = torch.FloatTensor()
-    count = 0
-    for data in tqdm(dataloaders):
-        img, label = data
-        n, c, h, w = img.size()
-        count += n
-        #print(count)
-        ff = torch.FloatTensor(n,2048).zero_()
-        for i in range(2):
-            if(i==1):
-                img = fliplr(img)
-            input_img = Variable(img.cuda())
-            outputs = model(input_img) 
-            f = outputs.data.cpu()
-            #print(f.size())
-            ff = ff+f
-        # norm feature
-        fnorm = torch.norm(ff, p=2, dim=1, keepdim=True)
-        ff = ff.div(fnorm.expand_as(ff))
-        features = torch.cat((features,ff), 0)
-    return features
-
 def get_id(img_path):
     camera_id = []
     labels = []
@@ -51,6 +22,36 @@ def get_id(img_path):
             labels.append(int(label))
         camera_id.append(int(camera[0]))
     return camera_id, labels
+
+def fliplr(img):
+    '''flip horizontal'''
+    inv_idx = torch.arange(img.size(3)-1,-1,-1).long()  # N x C x H x W
+    img_flip = img.index_select(3,inv_idx)
+    return img_flip
+
+def extract_feature(model,dataloaders,query_gallery):
+    num_ftrs = model.num_ftrs
+    features = torch.FloatTensor()
+    count = 0
+    for data in tqdm(dataloaders):
+        img, label = data
+        n, c, h, w = img.size()
+        count += n
+        #print(count)
+        ff = torch.FloatTensor(n,num_ftrs).zero_()
+        for i in range(2):
+            if(i==1):
+                img = fliplr(img)
+            input_img = Variable(img.cuda())
+            outputs = model(input_img) 
+            f = outputs.data.cpu()
+            #print(f.size())
+            ff = ff+f
+        # norm feature
+        fnorm = torch.norm(ff, p=2, dim=1, keepdim=True)
+        ff = ff.div(fnorm.expand_as(ff))
+        features = torch.cat((features,ff), 0)
+    return features
 
 def evaluate(qf,ql,qc,gf,gl,gc):
     query = qf

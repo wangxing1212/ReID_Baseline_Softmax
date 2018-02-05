@@ -20,7 +20,8 @@ from tqdm import tqdm
 from visdom import Visdom
 from re_ranking import re_ranking
 from re_ranking import re_evaluate
-viz = Visdom()
+from utils.visualize import Visualizer
+vis = Visualizer(opt.env)
 
 ################
 #dataset_process
@@ -31,6 +32,10 @@ def dataset_process(**kwargs):
     download_dataset(opt.dataset_name, opt.data_dir)
     pytorch_prepare(opt.dataset_name, opt.data_dir)
     print('-'*40)
+    
+    train_all = ''
+    if opt.train_all:
+        train_all = '_all'
 
     transform_train_list = [
             transforms.Resize(144),
@@ -53,7 +58,7 @@ def dataset_process(**kwargs):
             ]
 
     image_datasets = {}
-    image_datasets['train'] = datasets.ImageFolder(os.path.join(opt.data_dir+'/'+opt.dataset_name+'/pytorch/train_all'),
+    image_datasets['train'] = datasets.ImageFolder(os.path.join(opt.data_dir+'/'+opt.dataset_name+'/pytorch/train'+train_all),
                                               transforms.Compose(transform_train_list))
     image_datasets['val'] = datasets.ImageFolder(os.path.join(opt.data_dir+'/'+opt.dataset_name+'/pytorch/val'),
                                               transforms.Compose(transform_val_list))
@@ -87,11 +92,10 @@ def train(**kwargs):
      classes) = dataset_process()
         
     model = getattr(models, opt.model)(len(classes))
-    
     model.cuda()
     
     criterion = nn.CrossEntropyLoss()
-    
+
     optimizer = optim.SGD(model.parameters(), 
                           lr = opt.lr, 
                           momentum=opt.momentum, 
@@ -101,35 +105,20 @@ def train(**kwargs):
     exp_lr_scheduler = lr_scheduler.StepLR(optimizer, 
                                            step_size=opt.scheduler_step, 
                                            gamma=opt.scheduler_gamma)
-    
-    vis_epoch = np.array([0])
-    train_loss = np.array([1])
-    train_acc = np.array([0])
-    val_loss = np.array([1])
-    val_acc = np.array([0])
-    
-    
-    visdom_loss = viz.line(
-        Y=np.column_stack((train_loss,train_acc,val_loss, val_acc)),
-        X=np.column_stack((vis_epoch, vis_epoch, vis_epoch, vis_epoch)),
-        opts=dict(
-            legend=['train_loss', 'train_acc','val_loss','val_acc'],
-            fillarea=False,
-            showlegend=False,
-            xlabel='Epochs',
-            ylabel='Loss',
-            title=opt.dataset_name + ' Training Loss',
-        ),
-    )
+
     since = time.time()
+            
+    initial_loss = {
+                'Train Loss':1.0,
+                'Train Acc':0.0,
+                'Val Loss':1.0,
+                'Val Acc':0.0            
+            }
+    vis.plot_combine_many('Loss',initial_loss)
+    
     for epoch in range(opt.num_epochs):
         
         print('Epoch {}/{}'.format(epoch+1, opt.num_epochs))
-        
-        train_epoch_loss = 0.0
-        train_epoch_acc = 0.0
-        val_epoch_loss = 0.0
-        val_epoch_loss = 0.0
         
         for phase in ['train','val']:
             if phase == 'train':
@@ -163,7 +152,7 @@ def train(**kwargs):
             epoch_loss = running_loss / dataset_sizes[phase]
             epoch_acc = running_corrects / dataset_sizes[phase]
             print('{} Loss: {:.4f} Acc: {:.4f}'.format(phase, epoch_loss, epoch_acc))
-                        
+            
             if phase == 'train':
                 train_epoch_loss = epoch_loss
                 train_epoch_acc = epoch_acc
@@ -173,20 +162,16 @@ def train(**kwargs):
                 
                 if (epoch+1)%opt.save_rate == 0:
                     model.save(epoch+1)
+
+        epoch_loss = {
+                'Train Loss':train_epoch_loss,
+                'Train Acc':train_epoch_acc,
+                'Val Loss':val_epoch_loss,
+                'Val Acc':val_epoch_acc
+        }
         
-        vis_epoch = np.array([epoch+1])
-        train_loss = np.array([train_epoch_loss])
-        train_acc = np.array([train_epoch_acc])
-        val_loss = np.array([val_epoch_loss])
-        val_acc = np.array([val_epoch_acc])
-                
-        viz.line(
-        Y=np.column_stack((train_loss,train_acc,val_loss, val_acc)),
-        X=np.column_stack((vis_epoch, vis_epoch, vis_epoch, vis_epoch)),
-        win=visdom_loss,
-        update='append'
-        )
-        
+        vis.plot_combine_many('Loss',epoch_loss)
+            
         print('-'*10)
         
     time_elapsed = time.time() - since

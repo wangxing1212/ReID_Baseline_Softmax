@@ -24,27 +24,27 @@ def weights_init_classifier(m):
         init.normal(m.weight.data, std=0.001)
         init.constant(m.bias.data, 0.0)
         
-class ResNet50(BasicModule):
+class DenseNet121(BasicModule):
     def __init__(self, class_num,**kwargs):
         opt.parse(kwargs)
-        super(ResNet50, self).__init__()
-        self.model_name = 'resnet50'
+        super(DenseNet121, self).__init__()
+        self.model_name = 'densenet121'
         self.dataset_name = opt.dataset_name
         
-        model_ft = models.resnet50(pretrained=True)
+        model_ft = models.densenet121(pretrained=True)
+        # add pooling to the model
+        # in the originial version, pooling is written in the forward function 
+        model_ft.features.avgpool = nn.AdaptiveAvgPool2d((1,1))
 
-        # avg pooling to global pooling
-        model_ft.avgpool = nn.AdaptiveAvgPool2d((1,1))
-
-        num_ftrs = model_ft.fc.in_features
+        num_ftrs = model_ft.classifier.in_features
         self.num_ftrs = num_ftrs
+        
         add_block = []
         num_bottleneck = 512
-        add_block += [nn.Linear(num_ftrs, num_bottleneck)]
+        add_block += [nn.Linear(num_ftrs, num_bottleneck)]  #For ResNet, it is 2048
         add_block += [nn.BatchNorm1d(num_bottleneck)]
         add_block += [nn.LeakyReLU(0.1)]
-        add_block += [nn.Dropout(p=0.5)]  #default dropout rate 0.5
-        #transforms.CenterCrop(224),
+        add_block += [nn.Dropout(p=0.5)]
         add_block = nn.Sequential(*add_block)
         add_block.apply(weights_init_kaiming)
         model_ft.fc = add_block
@@ -57,6 +57,8 @@ class ResNet50(BasicModule):
         self.classifier = classifier
 
     def forward(self, x):
-        x = self.model(x)
+        x = self.model.features(x)  
+        x = x.view(x.size(0),-1)
+        x = self.model.fc(x)
         x = self.classifier(x)
         return x
