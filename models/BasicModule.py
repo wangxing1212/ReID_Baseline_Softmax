@@ -21,7 +21,7 @@ class BasicModule(t.nn.Module):
                                  +self.model_name+'/'
                                  +save_filename)
         self.load_state_dict(t.load(save_path))
-        print(save_path)
+        print('Model:'+ save_filename+ ' loads successfully' )
 
     def save(self, epoch_label):
         '''

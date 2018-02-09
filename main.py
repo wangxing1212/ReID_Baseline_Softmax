@@ -15,11 +15,14 @@ import models
 from reid_dataset import download_dataset
 from reid_dataset import pytorch_prepare
 from config import opt
-from evaluation import *
+from features import extract_features
+from features import save_features
+from features import load_features
+from evaluation import ranking
+from evaluation import evaluate
+from evaluation import get_id
 from tqdm import tqdm
 from visdom import Visdom
-from re_ranking import re_ranking
-from re_ranking import re_evaluate
 from utils.visualize import Visualizer
 vis = Visualizer(opt.env)
 
@@ -197,106 +200,27 @@ def test(**kwargs):
     
     model = getattr(models, opt.model)(len(classes))
     model.load(opt.load_epoch_label)
-    
     # Remove the final fc layer and classifier layer
     model.model.fc = nn.Sequential()
     model.classifier = nn.Sequential()
-    
     # Change to test mode
     model = model.eval()
     model = model.cuda()
     
-    # Extract feature
-    print('Extracting query features')
-    query_feature = extract_feature(model,test_dataloaders['query'],'query')
-    query_feature = query_feature.numpy()
+    if opt.load_features:
+        all_features = load_features()
+    else:
+        all_features = extract_features(model,test_dataloaders, opt.flip)
+        save_features(all_features)
+        
+    query_feature = all_features['query']
+    gallery_feature = all_features['gallery']
     
-    print('---------------------------')
-    print('Extracting gallery features')
-    gallery_feature = extract_feature(model,test_dataloaders['gallery'],'gallery')
-    gallery_feature = gallery_feature.numpy()
-   
+    print('-'*30)
+    result = ranking(query_feature,gallery_feature)
     
-    CMC = torch.IntTensor(len(gallery_label)).zero_()
-    ap = 0.0
-    print('-----------------------')
-    print('Calculating CMC and mAP')
-    for i in tqdm(range(len(query_label))):
-        ap_tmp, CMC_tmp = evaluate(query_feature[i],query_label[i],query_cam[i],gallery_feature,gallery_label,gallery_cam)
-        if CMC_tmp[0]==-1:
-            continue
-        CMC = CMC + CMC_tmp
-        ap += ap_tmp
-
-    CMC = CMC.float()
-    CMC = CMC/len(query_label) #average CMC
-    print('top1:%f top5:%f top10:%f mAP:%f'%(CMC[0],CMC[4],CMC[9],ap/len(query_label)))
-
-################
-#Test
-################
-def test_rerank(**kwargs):
-    opt.parse(kwargs, show_config = True)
-    
-    (image_datasets,
-     train_dataloaders,
-     test_dataloaders,
-     dataset_sizes,classes) = dataset_process()
-    
-    gallery_path = image_datasets['gallery'].imgs
-    query_path = image_datasets['query'].imgs
-
-    gallery_cam,gallery_label = get_id(gallery_path)
-    query_cam,query_label = get_id(query_path)
-    
-    model = getattr(models, opt.model)(len(classes))
-    model.load(opt.load_epoch_label)
-    
-    # Remove the final fc layer and classifier layer
-    model.model.fc = nn.Sequential()
-    model.classifier = nn.Sequential()
-    
-    # Change to test mode
-    model = model.eval()
-    model = model.cuda()
-    
-    # Extract feature
-    print('Extracting query features')
-    query_feature = extract_feature(model,test_dataloaders['query'],'query')
-    query_feature = query_feature.numpy()
-    
-    print('---------------------------')
-    print('Extracting gallery features')
-    gallery_feature = extract_feature(model,test_dataloaders['gallery'],'gallery')
-    gallery_feature = gallery_feature.numpy()
-   
-    
-    CMC = torch.IntTensor(len(gallery_label)).zero_()
-    ap = 0.0
-    #re-ranking
-    print('calculate initial distance')
-    q_g_dist = np.dot(query_feature, np.transpose(gallery_feature))
-    q_q_dist = np.dot(query_feature, np.transpose(query_feature))
-    g_g_dist = np.dot(gallery_feature, np.transpose(gallery_feature))
-    print('start re-ranking...')
-    since = time.time()
-    re_rank = re_ranking(q_g_dist, q_q_dist, g_g_dist)
-    time_elapsed = time.time() - since
-    print('Reranking complete in {:.0f}m {:.0f}s'.format(
-            time_elapsed // 60, time_elapsed % 60))
-    print('-----------------------')
-    for i in tqdm(range(len(query_label))):
-        ap_tmp, CMC_tmp = re_evaluate(re_rank[i,:],query_label[i],query_cam[i],gallery_label,gallery_cam)
-        if CMC_tmp[0]==-1:
-            continue
-        CMC = CMC + CMC_tmp
-        ap += ap_tmp
-        #print(i, CMC_tmp[0])
-
-    CMC = CMC.float()
-    CMC = CMC/len(query_label) #average CMC
-    print('top1:%f top5:%f top10:%f mAP:%f'%(CMC[0],CMC[4],CMC[9],ap/len(query_label)))
-
+    print('-'*30)
+    evaluate(result,query_label,query_cam,gallery_label,gallery_cam)
     
 if __name__=='__main__':
     import fire

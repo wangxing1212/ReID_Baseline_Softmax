@@ -30,7 +30,7 @@ Returns:
 
 
 import numpy as np
-import torch
+from tqdm import tqdm
 
 def k_reciprocal_neigh( initial_rank, i, k1):
     forward_k_neigh_index = initial_rank[i,:k1+1]
@@ -55,7 +55,8 @@ def re_ranking(q_g_dist, q_q_dist, g_g_dist, k1=20, k2=6, lambda_value=0.3):
     query_num = q_g_dist.shape[0]
     all_num = original_dist.shape[0]
 
-    for i in range(all_num):
+    print('Calculating k-reciprocal neighbors')
+    for i in tqdm(range(all_num)):
         # k-reciprocal neighbors
         k_reciprocal_index = k_reciprocal_neigh( initial_rank, i, k1)
         k_reciprocal_expansion_index = k_reciprocal_index
@@ -78,12 +79,15 @@ def re_ranking(q_g_dist, q_q_dist, g_g_dist, k1=20, k2=6, lambda_value=0.3):
         del V_qe
     del initial_rank
     invIndex = []
-    for i in range(all_num):
+    
+    print('Inserting k-reciprocal neighbors')
+    for i in tqdm(range(all_num)):
         invIndex.append(np.where(V[:,i] != 0)[0])
 
     jaccard_dist = np.zeros_like(original_dist,dtype = np.float32)
-
-    for i in range(query_num):
+    
+    print('Calculating Jaccard Distance')
+    for i in tqdm(range(query_num)):
         temp_min = np.zeros(shape=[1,all_num],dtype=np.float32)
         indNonZero = np.where(V[i,:] != 0)[0]
         indImages = []
@@ -98,46 +102,3 @@ def re_ranking(q_g_dist, q_q_dist, g_g_dist, k1=20, k2=6, lambda_value=0.3):
     del jaccard_dist
     final_dist = final_dist[:query_num,query_num:]
     return final_dist
-
-def re_evaluate(score,ql,qc,gl,gc):
-    index = np.argsort(score)  #from small to large
-    #index = index[::-1]
-    # good index
-    query_index = np.argwhere(gl==ql)
-    camera_index = np.argwhere(gc==qc)
-
-    good_index = np.setdiff1d(query_index, camera_index, assume_unique=True)
-    junk_index1 = np.argwhere(gl==-1)
-    junk_index2 = np.intersect1d(query_index, camera_index)
-    junk_index = np.append(junk_index2, junk_index1) #.flatten())
-    
-    CMC_tmp = compute_mAP(index, good_index, junk_index)
-    return CMC_tmp
-
-
-def compute_mAP(index, good_index, junk_index):
-    ap = 0
-    cmc = torch.IntTensor(len(index)).zero_()
-    if good_index.size==0:   # if empty
-        cmc[0] = -1
-        return ap,cmc
-
-    # remove junk_index
-    mask = np.in1d(index, junk_index, invert=True)
-    index = index[mask]
-
-    # find good_index index
-    ngood = len(good_index)
-    mask = np.in1d(index, good_index)
-    rows_good = np.argwhere(mask==True)
-    rows_good = rows_good.flatten()
-    
-    cmc[rows_good[0]:] = 1
-    for i in range(ngood):
-        d_recall = 1.0/ngood
-        precision = (i+1)*1.0/(rows_good[i]+1)
-        if rows_good[i]!=0:
-            old_precision = i*1.0/rows_good[i]
-        else:
-            old_precision=1.0
-        ap = ap + d_recall*(old_precision + precision)/2

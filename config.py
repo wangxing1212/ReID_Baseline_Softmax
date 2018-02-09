@@ -6,7 +6,7 @@ class DefaultConfig(object):
     batch_size = 32
     num_epochs = 50
     save_rate = 10
-    model = 'ResNet50'
+    model = 'DenseNet121'
     load_epoch_label = 50
     lr =0.01
     momentum = 0.9
@@ -15,6 +15,9 @@ class DefaultConfig(object):
     scheduler_step = 40
     scheduler_gamma = 0.1
     train_all = True
+    flip = True
+    load_features = True
+    re_ranking = True
 
 def parse(self,kwargs,show_config=False):
     '''
