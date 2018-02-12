@@ -1,0 +1,3 @@
+requests
+h5py
+scipy
