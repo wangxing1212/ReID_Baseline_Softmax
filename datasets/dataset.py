@@ -8,15 +8,16 @@ import numpy as np
 import torchvision
 from torchvision import datasets, models, transforms
 
-from datasets import download_dataset
+from datasets import reiddataset_downloader
 from datasets import pytorch_prepare
 from config import opt
 
+from utils import RandomErasing
 
 def dataset(**kwargs):
     opt.parse(kwargs)
     print('-'*40)
-    download_dataset(opt.dataset_name, opt.data_dir)
+    reiddataset_downloader(opt.dataset_name, opt.data_dir)
     pytorch_prepare(opt.dataset_name, opt.data_dir)
     print('-'*40)
     
