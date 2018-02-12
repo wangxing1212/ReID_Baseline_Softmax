@@ -12,8 +12,8 @@ from PIL import Image
 import time
 import os
 import models
-from reid_dataset import download_dataset
-from reid_dataset import pytorch_prepare
+from datasets import download_dataset
+from datasets import pytorch_prepare
 from config import opt
 from features import extract_features
 from features import save_features
@@ -23,7 +23,8 @@ from evaluation import evaluate
 from evaluation import get_id
 from tqdm import tqdm
 from visdom import Visdom
-from utils.visualize import Visualizer
+from utils import Visualizer
+from utils import RandomErasing
 vis = Visualizer(opt.env)
 
 ################
@@ -59,6 +60,10 @@ def dataset_process(**kwargs):
             transforms.ToTensor(),
             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
             ]
+    
+    if opt.random_erasing_p > 0:
+        transform_train_list = transform_train_list + [RandomErasing(opt.random_erasing_p)]
+        transform_val_list = transform_val_list + [RandomErasing(opt.random_erasing_p)]
 
     image_datasets = {}
     image_datasets['train'] = datasets.ImageFolder(os.path.join(opt.data_dir+'/'+opt.dataset_name+'/pytorch/train'+train_all),
@@ -86,6 +91,7 @@ def dataset_process(**kwargs):
 #Train
 ################
 def train(**kwargs):
+   # server.main()
     opt.parse(kwargs,show_config=True)
 
     (image_datasets,
@@ -111,13 +117,14 @@ def train(**kwargs):
 
     since = time.time()
             
-    initial_loss = {
-                'Train Loss':1.0,
-                'Train Acc':0.0,
-                'Val Loss':1.0,
-                'Val Acc':0.0            
-            }
-    vis.plot_combine_many('Loss',initial_loss)
+    if vis.check_connection():
+        initial_loss = {
+                    'Train Loss':1.0,
+                    'Train Acc':0.0,
+                    'Val Loss':1.0,
+                    'Val Acc':0.0            
+                }
+        vis.plot_combine_all('Loss',initial_loss)
     
     for epoch in range(opt.num_epochs):
         
@@ -173,7 +180,8 @@ def train(**kwargs):
                 'Val Acc':val_epoch_acc
         }
         
-        vis.plot_combine_many('Loss',epoch_loss)
+        if vis.check_connection():
+            vis.plot_combine_all('Loss',epoch_loss)
             
         print('-'*10)
         

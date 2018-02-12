@@ -22,6 +22,9 @@ class Visualizer(object):
         '''
         self.vis = visdom.Visdom(env=env,**kwargs)
         return self
+    
+    def check_connection(self):
+        return self.vis.check_connection()
 
     def plot(self, name, y,**kwargs):
         '''
@@ -36,7 +39,7 @@ class Visualizer(object):
                       )
         self.index[name] = x + 1
         
-    def plot_many(self, d):
+    def plot_all(self, d):
         '''
         一次plot多个
         @params d: dict (name,value) i.e. ('loss',0.11)
@@ -44,7 +47,7 @@ class Visualizer(object):
         for k, v in d.items():
             self.plot(k, v)
             
-    def plot_combine_many(self, name, d):
+    def plot_combine_all(self, name, d):
         x = self.index.get(name, 0)
         X = []
         Y = []
@@ -68,7 +71,7 @@ class Visualizer(object):
         self.index[name] = x + 1
             
 
-    def img_many(self, d):
+    def img_all(self, d):
         for k, v in d.iteritems():
             self.img(k, v)
 

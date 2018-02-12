@@ -1,12 +1,12 @@
 import warnings
 class DefaultConfig(object):
     env = 'reid_baseline' # visdom 环境
-    data_dir = '/home/linshan/Datasets/'
+    data_dir = './datasets/'
     dataset_name = 'Market1501'
     batch_size = 32
     num_epochs = 50
     save_rate = 10
-    model = 'DenseNet121'
+    model = 'ResNet50'
     load_epoch_label = 50
     lr =0.01
     momentum = 0.9
@@ -16,8 +16,9 @@ class DefaultConfig(object):
     scheduler_gamma = 0.1
     train_all = True
     flip = True
-    load_features = True
+    load_features = False
     re_ranking = True
+    random_erasing_p = 0
 
 def parse(self,kwargs,show_config=False):
     '''
