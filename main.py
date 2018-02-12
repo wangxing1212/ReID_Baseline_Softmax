@@ -9,8 +9,6 @@ from torchvision import datasets, models, transforms
 import time
 import os
 import models
-from datasets import download_dataset
-from datasets import pytorch_prepare
 from datasets import dataset
 from config import opt
 from features import extract_features
