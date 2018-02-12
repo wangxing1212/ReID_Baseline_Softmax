@@ -53,11 +53,13 @@ def save_features(all_features, **kwargs):
     opt.parse(kwargs, show_config = False)
 
     save_filename = (opt.dataset_name+'_'+opt.model + '_epo%s' % opt.load_epoch_label)
-    save_dir = 'features/'+opt.dataset_name+'/'+opt.model
+    save_dir = os.path.join('features',
+                            opt.dataset_name,
+                            opt.model)
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
         
-    save_path = os.path.join(save_dir+'/'+save_filename )
+    save_path = os.path.join(save_dir,save_filename )
         
     np.save(save_path, all_features)
     print('Features saved to '+save_path)
@@ -66,9 +68,11 @@ def load_features(**kwargs):
     opt.parse(kwargs, show_config = False)        
     load_filename = (opt.dataset_name+'_'+
                      opt.model + '_epo%s.npy' % opt.load_epoch_label)
-    load_dir = 'features/'+opt.dataset_name+'/'+opt.model
+    load_dir = os.path.join('features',
+                            opt.dataset_name,
+                            opt.model)
     if not os.path.exists(load_dir):
         print('The features are not existed, please extract first') 
-    features = np.load(load_dir+'/'+load_filename )
+    features = np.load(os.path.join(load_dir,load_filename))
     print('Features load successfully')
     return features.item()
