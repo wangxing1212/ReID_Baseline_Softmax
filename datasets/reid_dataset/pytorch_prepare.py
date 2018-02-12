@@ -28,7 +28,7 @@ def pytorch_prepare(dataset_name, data_dir):
                 dst_dir = os.path.join(query_save_dir, ID[0])
                 if not os.path.isdir(dst_dir):
                     os.mkdir(dst_dir)
-                copyfile(os.path.join(src_dir, dst_dir , name))
+                copyfile(src_dir, os.path.join(dst_dir , name))
         #-----------------------------------------
         #gallery
         print('generatring '+dataset_name+' gallery images.')
@@ -46,7 +46,7 @@ def pytorch_prepare(dataset_name, data_dir):
                 dst_dir = os.path.join(gallery_save_dir, ID[0])
                 if not os.path.isdir(dst_dir):
                     os.mkdir(dst_dir)
-                copyfile(os.path.join(src_dir, dst_dir,name))
+                copyfile(src_dir, os.path.join(dst_dir,name))
         #---------------------------------------
         #train_all
         print('generatring '+dataset_name + ' all training images.')
@@ -64,7 +64,7 @@ def pytorch_prepare(dataset_name, data_dir):
                 dst_dir = os.path.join(train_save_all_dir, ID[0])
                 if not os.path.isdir(dst_dir):
                     os.mkdir(dst_dir)
-                copyfile(os.path.join(src_dir, dst_dir, name))
+                copyfile(src_dir, os.path.join(dst_dir, name))
                 
         #---------------------------------------
         #train_val
@@ -86,7 +86,7 @@ def pytorch_prepare(dataset_name, data_dir):
                     os.mkdir(dst_dir)
                     dst_dir = os.path.join(val_save_dir, ID[0])  #first image is used as val image
                     os.mkdir(dst_dir)
-                copyfile(os.path.join(src_dir, dst_dir , name))
+                copyfile(src_dir, os.path.join(dst_dir , name))
         print('Finished ' + dataset_name)
     else:
         print(dataset_name + ' pytorch directory exists!')

@@ -50,13 +50,13 @@ def dataset(**kwargs):
         transform_val_list = transform_val_list + [RandomErasing(opt.random_erasing_p)]
 
     image_datasets = {}
-    image_datasets['train'] = datasets.ImageFolder(os.path.join(opt.data_dir+'/'+opt.dataset_name+'/pytorch/train'+train_all),
+    image_datasets['train'] = datasets.ImageFolder(os.path.join(opt.data_dir,opt.dataset_name,'pytorch','train'+train_all),
                                               transforms.Compose(transform_train_list))
-    image_datasets['val'] = datasets.ImageFolder(os.path.join(opt.data_dir+'/'+opt.dataset_name+'/pytorch/val'),
+    image_datasets['val'] = datasets.ImageFolder(os.path.join(opt.data_dir,opt.dataset_name,'pytorch','val'),
                                               transforms.Compose(transform_val_list))
-    image_datasets['query'] = datasets.ImageFolder(os.path.join(opt.data_dir+'/'+ opt.dataset_name + '/pytorch/query'), 
+    image_datasets['query'] = datasets.ImageFolder(os.path.join(opt.data_dir,opt.dataset_name , 'pytorch','query'), 
                                                   transforms.Compose(transform_test_list))
-    image_datasets['gallery'] = datasets.ImageFolder(os.path.join(opt.data_dir+'/'+ opt.dataset_name + '/pytorch/gallery'),
+    image_datasets['gallery'] = datasets.ImageFolder(os.path.join(opt.data_dir, opt.dataset_name , 'pytorch','gallery'),
                                                   transforms.Compose(transform_test_list))
     train_dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=opt.batch_size,
                                                     shuffle=True, num_workers=4)
