@@ -12,20 +12,6 @@ from utils import re_ranking
 from config import opt
 import time
 
-def get_id(img_path):
-    camera_id = []
-    labels = []
-    for path, v in img_path:
-        filename = path.split('/')[-1]
-        label = filename[0:4]
-        camera = filename.split('c')[1]
-        if label[0:2]=='-1':
-            labels.append(-1)
-        else:
-            labels.append(int(label))
-        camera_id.append(int(camera[0]))
-    return camera_id, labels
-
 def ranking(query_feature, gallery_feature, **kwargs):
     opt.parse(kwargs, show_config = False)
     

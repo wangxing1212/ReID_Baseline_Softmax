@@ -1,8 +1,11 @@
 import os
 from .reiddataset_downloader import *
 def import_CUHK01(dataset_dir):
-    reiddataset_downloader('CUHK01',dataset_dir)
     cuhk01_dir = os.path.join(dataset_dir,'CUHK01')
+    
+    if not os.path.exists(cuhk01_dir):
+        reiddataset_downloader('CUHK01',dataset_dir)
+    
     file_list=os.listdir(cuhk01_dir)
     name_dict={}
     for name in file_list:

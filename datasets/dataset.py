@@ -1,71 +1,112 @@
-import torch
-import torch.nn as nn
-import torch.optim as optim
-from torch.optim import lr_scheduler
-from torch.autograd import Variable
 import os
+from PIL import  Image
+from torch.utils import data
 import numpy as np
-import torchvision
-from torchvision import datasets, models, transforms
-
-from datasets import reiddataset_downloader
-from datasets import pytorch_prepare
+from torchvision import  transforms as T
+from .reid_dataset import market_duke
 from config import opt
-
 from utils import RandomErasing
 
-def dataset(**kwargs):
-    opt.parse(kwargs)
-    print('-'*40)
-    reiddataset_downloader(opt.dataset_name, opt.data_dir)
-    pytorch_prepare(opt.dataset_name, opt.data_dir)
-    print('-'*40)
-    
-    train_all = ''
-    if opt.train_all:
-        train_all = '_all'
+class Train_Dataset(data.Dataset):
 
-    transform_train_list = [
-            transforms.Resize(144),
-            transforms.RandomCrop((256,128)),
-            transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-            ]
+    def __init__(self,transforms = None, train_val = 'train', **kwargs):
+        opt.parse(kwargs,show_config=False)
+        
+        train,query,gallery = market_duke(opt.data_dir,opt.dataset_name)
 
-    transform_val_list = [
-            transforms.Resize(size=(256,128)),
-            transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-            ]
-
-    transform_test_list =[
-            transforms.Resize((288,144), interpolation=3),
-            transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-            ]
+        if train_val == 'train':
+            self.train_data = train['data']
+            self.train_ids = train['ids']
+        elif train_val == 'val':
+            val_data = {'data':[],'ids':[]}
+            for path,id,cam_n in train['data']:
+                if id not in val_data['ids']:
+                    val_data['data'].append(path)
+                    val_data['ids'].append(id)
+            self.train_data = val_data['data']
+            self.train_ids = val_data['ids']
+        else:
+            print('Input should only be train or val')
+        
+        self.num_ids = len(self.train_ids)
+            
+        if transforms is None:
+            if train_val == 'train':
+                if opt.random_erasing_p > 0:
+                    self.transforms = T.Compose([
+                                T.Resize(144),
+                                T.RandomCrop((256,128)),
+                                T.RandomHorizontalFlip(),
+                                T.ToTensor(),
+                                RandomErasing(opt.random_erasing_p),
+                                T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+                                ])
+                else:
+                    self.transforms = T.Compose([
+                                T.Resize(144),
+                                T.RandomCrop((256,128)),
+                                T.RandomHorizontalFlip(),
+                                T.ToTensor(),
+                                T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+                                ])
+            else:
+                    self.transforms = T.Compose( [
+                            T.Resize(size=(256,128)),
+                            T.ToTensor(),
+                            T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+                            ])
+                
+        
+    def __getitem__(self,index):
+        '''
+        一次返回一张图片的数据
+        '''
+        img_path = self.train_data[index][0]
+        id = self.train_data[index][1]
+        label = self.train_ids.index(id)
+        data = Image.open(img_path)
+        data = self.transforms(data)
+        return data, label, id
     
-    if opt.random_erasing_p > 0:
-        transform_train_list = transform_train_list + [RandomErasing(opt.random_erasing_p)]
-        transform_val_list = transform_val_list + [RandomErasing(opt.random_erasing_p)]
-
-    image_datasets = {}
-    image_datasets['train'] = datasets.ImageFolder(os.path.join(opt.data_dir,opt.dataset_name,'pytorch','train'+train_all),
-                                              transforms.Compose(transform_train_list))
-    image_datasets['val'] = datasets.ImageFolder(os.path.join(opt.data_dir,opt.dataset_name,'pytorch','val'),
-                                              transforms.Compose(transform_val_list))
-    image_datasets['query'] = datasets.ImageFolder(os.path.join(opt.data_dir,opt.dataset_name , 'pytorch','query'), 
-                                                  transforms.Compose(transform_test_list))
-    image_datasets['gallery'] = datasets.ImageFolder(os.path.join(opt.data_dir, opt.dataset_name , 'pytorch','gallery'),
-                                                  transforms.Compose(transform_test_list))
-    train_dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=opt.batch_size,
-                                                    shuffle=True, num_workers=4)
-                                                  for x in ['train', 'val']}
-    test_dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=opt.batch_size,
-                                                    shuffle=False, num_workers=4)
-                                                  for x in ['query','gallery']}
+    def __len__(self):
+        return len(self.train_data)
     
-    dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'val','query','gallery']}
-    classes = image_datasets['train'].classes  
+    def num_ids(self):
+        return self.num_ids
     
-    return image_datasets,train_dataloaders,test_dataloaders,dataset_sizes,classes
+    
+class Test_Dataset(data.Dataset):
+    def __init__(self, transforms = None, query_gallery='query', **kwargs):
+        opt.parse(kwargs,show_config=False)
+        train,query,gallery = market_duke(opt.data_dir,opt.dataset_name)
+        
+        if query_gallery == 'query':
+            self.test_data = query['data']
+            self.test_ids = query['ids']
+        elif query_gallery == 'gallery':
+            self.test_data = gallery['data']
+            self.test_ids = gallery['ids']
+        else:
+            print('Input shoud only be query or gallery;')
+        
+        if transforms is None:
+            self.transforms = T.Compose( [
+                    T.Resize(size=(256,128)),
+                    T.ToTensor(),
+                    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+                    ])
+                
+    def __getitem__(self,index):
+        '''
+        一次返回一张图片的数据
+        '''
+        img_path = self.test_data[index][0]
+        id = self.test_data[index][1]
+        cam_n = self.test_data[index][2]
+        label = self.test_ids.index(id)
+        data = Image.open(img_path)
+        data = self.transforms(data)
+        return data, label, id, cam_n
+    
+    def __len__(self):
+        return len(self.test_data)

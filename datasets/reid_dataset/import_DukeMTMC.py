@@ -1,8 +1,9 @@
 import os
 from .reiddataset_downloader import*
 def import_DukeMTMC(dataset_dir):
-    reiddataset_downloader('DukeMTMC',dataset_dir)
     dukemtmc_dir = os.path.join(dataset_dir, 'DukeMTMC')
+    if not os.path.exists(dukemtmc_dir):
+        reiddataset_downloader('DukeMTMC',dataset_dir)
     data_group = ['train','test','query']
     for group in data_group:
         if group == 'train':

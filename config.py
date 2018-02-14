@@ -1,7 +1,8 @@
 import warnings
 class DefaultConfig(object):
     env = 'reid_baseline' # visdom 环境
-    data_dir = './datasets/'
+    #data_dir = './datasets/'
+    data_dir = '/home/linshan/Datasets'
     dataset_name = 'Market1501'
     batch_size = 32
     num_epochs = 50
@@ -14,7 +15,6 @@ class DefaultConfig(object):
     nesterov = True
     scheduler_step = 40
     scheduler_gamma = 0.1
-    train_all = True
     flip = True
     load_features = False
     re_ranking = True

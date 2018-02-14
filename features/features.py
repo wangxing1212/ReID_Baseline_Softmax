@@ -22,9 +22,11 @@ def extract_features(model, dataloaders, flip = True):
     all_features = dict.fromkeys(dataloaders.keys())
     for k,v in dataloaders.items():
         features = torch.FloatTensor()
+        ids = ()
+        cams = torch.LongTensor()
         print('Extracting '+ k +' features')
         for data in tqdm(v):
-            img, label = data
+            img, label, id, cam = data
             n, c, h, w = img.size()
             ff = torch.FloatTensor(n,num_ftrs).zero_()
             if flip:
@@ -44,8 +46,10 @@ def extract_features(model, dataloaders, flip = True):
             fnorm = torch.norm(ff, p=2, dim=1, keepdim=True)
             ff = ff.div(fnorm.expand_as(ff))
             features = torch.cat((features,ff), 0)
+            ids = ids+id
+            cams = torch.cat((cams,cam),0)
             
-        all_features[k]=features.numpy()
+        all_features[k]=[features.numpy(),np.asarray(ids,dtype=np.int),cams.numpy()]
         
     return all_features
 

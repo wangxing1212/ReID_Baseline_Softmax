@@ -8,5 +8,5 @@ def batch_image_show(images_batch, labels, classes, n):
     images = std * images + mean
     images = np.clip(images, 0, 1)
     plt.imshow(images)
-    plt.title('Person ID is '+ str(classes[labels[n]]))
+    plt.title('Person ID is '+ str(classes[n]))
     plt.pause(0.001)

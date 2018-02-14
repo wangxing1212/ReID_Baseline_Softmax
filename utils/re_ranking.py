@@ -73,7 +73,7 @@ def re_ranking(q_g_dist, q_q_dist, g_g_dist, k1=20, k2=6, lambda_value=0.3):
     original_dist = original_dist[:query_num,]
     if k2 != 1:
         V_qe = np.zeros_like(V,dtype=np.float32)
-        for i in range(all_num):
+        for i in tqdm(range(all_num)):
             V_qe[i,:] = np.mean(V[initial_rank[i,:k2],:],axis=0)
         V = V_qe
         del V_qe

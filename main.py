@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.optim import lr_scheduler
 from torch.autograd import Variable
+from torch.utils.data import Dataset, DataLoader
 import numpy as np
 import torchvision
 from torchvision import datasets, models, transforms
@@ -16,27 +17,29 @@ from features import save_features
 from features import load_features
 from evaluation import ranking
 from evaluation import evaluate
-from evaluation import get_id
 from tqdm import tqdm
 from visdom import Visdom
 from utils import Visualizer
 from utils import RandomErasing
+from datasets import Train_Dataset
+from datasets import Test_Dataset
 vis = Visualizer(opt.env)
-
+num_classes = Train_Dataset(train_val = 'train').num_ids
 ################
 #Train
 ################
 def train(**kwargs):
    # server.main()
     opt.parse(kwargs,show_config=True)
-
-    (image_datasets,
-     train_dataloaders,
-     test_dataloaders,
-     dataset_sizes,
-     classes) = dataset()
+    
+    train_dataloaders = {x: DataLoader(Train_Dataset(train_val = x),
+                                       batch_size=opt.batch_size,
+                                       shuffle=True, num_workers=4)
+                         for x in ['train', 'val']}
+    
+    dataset_sizes = {x:len(Train_Dataset(train_val = x)) for x in ['train', 'val']}
         
-    model = getattr(models, opt.model)(len(classes))
+    model = getattr(models, opt.model)(num_classes)
     model.cuda()
     
     criterion = nn.CrossEntropyLoss()
@@ -62,6 +65,7 @@ def train(**kwargs):
                 }
         vis.plot_combine_all('Loss',initial_loss)
     
+    print('-'*40)
     for epoch in range(opt.num_epochs):
         
         print('Epoch {}/{}'.format(epoch+1, opt.num_epochs))
@@ -77,23 +81,23 @@ def train(**kwargs):
             running_corrects = 0
             
             for data in train_dataloaders[phase]:
-                images, id = data
+                images, labels, ids = data
                 
                 images = Variable(images.cuda())
-                id = Variable(id.cuda())
+                labels = Variable(labels.cuda())
                 
                 optimizer.zero_grad()
                 
                 outputs = model(images)
                 _, preds = torch.max(outputs.data,1)
-                loss = criterion(outputs, id)
+                loss = criterion(outputs, labels)
                 
                 if phase == 'train':
                     loss.backward()
                     optimizer.step()
                 
                 running_loss += loss.data[0]
-                running_corrects += torch.sum(preds == id.data)
+                running_corrects += torch.sum(preds == labels.data)
                 
             epoch_loss = running_loss / dataset_sizes[phase]
             epoch_acc = running_corrects / dataset_sizes[phase]
@@ -131,18 +135,12 @@ def train(**kwargs):
 def test(**kwargs):
     opt.parse(kwargs, show_config = True)
     
-    (image_datasets,
-     train_dataloaders,
-     test_dataloaders,
-     dataset_sizes,classes) = dataset()
+    test_dataloaders = {x: DataLoader(Test_Dataset(query_gallery = x),
+                                       batch_size=opt.batch_size,
+                                       shuffle=True, num_workers=4)
+                         for x in ['query', 'gallery']}
     
-    gallery_path = image_datasets['gallery'].imgs
-    query_path = image_datasets['query'].imgs
-
-    gallery_cam,gallery_label = get_id(gallery_path)
-    query_cam,query_label = get_id(query_path)
-    
-    model = getattr(models, opt.model)(len(classes))
+    model = getattr(models, opt.model)(num_classes)
     model.load(opt.load_epoch_label)
     # Remove the final fc layer and classifier layer
     model.model.fc = nn.Sequential()
@@ -157,13 +155,18 @@ def test(**kwargs):
         all_features = extract_features(model,test_dataloaders, opt.flip)
         save_features(all_features)
         
-    query_feature = all_features['query']
-    gallery_feature = all_features['gallery']
+    query_feature = all_features['query'][0]
+    gallery_feature = all_features['gallery'][0]
     
     print('-'*30)
     result = ranking(query_feature,gallery_feature)
     
     print('-'*30)
+    gallery_label = all_features['gallery'][1]
+    gallery_cam = all_features['gallery'][2]
+    query_label = all_features['query'][1]
+    query_cam = all_features['query'][2]
+    
     evaluate(result,query_label,query_cam,gallery_label,gallery_cam)
     
 if __name__=='__main__':
