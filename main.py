@@ -80,7 +80,7 @@ def train(**kwargs):
             running_loss = 0.0
             running_corrects = 0
             
-            for data in train_dataloaders[phase]:
+            for data in tqdm(train_dataloaders[phase]):
                 images, labels, ids = data
                 
                 images = Variable(images.cuda())

@@ -21,7 +21,7 @@ class Train_Dataset(data.Dataset):
             val_data = {'data':[],'ids':[]}
             for path,id,cam_n in train['data']:
                 if id not in val_data['ids']:
-                    val_data['data'].append(path)
+                    val_data['data'].append([path,id,cam_n])
                     val_data['ids'].append(id)
             self.train_data = val_data['data']
             self.train_ids = val_data['ids']
@@ -64,6 +64,7 @@ class Train_Dataset(data.Dataset):
         img_path = self.train_data[index][0]
         id = self.train_data[index][1]
         label = self.train_ids.index(id)
+        
         data = Image.open(img_path)
         data = self.transforms(data)
         return data, label, id
