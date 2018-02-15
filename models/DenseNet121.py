@@ -30,6 +30,7 @@ class DenseNet121(BasicModule):
         super(DenseNet121, self).__init__()
         self.model_name = 'densenet121'
         self.dataset_name = opt.dataset_name
+        self.annotation = opt.annotation
         
         model_ft = models.densenet121(pretrained=True)
         # add pooling to the model

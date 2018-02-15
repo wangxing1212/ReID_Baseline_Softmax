@@ -16,10 +16,18 @@ class BasicModule(t.nn.Module):
         '''
         save_filename = (self.model_name 
                          + '_epo%s.pth' % epoch_label)
-        save_path = os.path.join('checkpoints',
-                                  self.dataset_name,
-                                  self.model_name,
-                                  save_filename)
+        
+        if self.annotation != None:
+            save_path = os.path.join('checkpoints',
+                                      self.dataset_name,
+                                      self.model_name,
+                                      self.annotation,
+                                      save_filename)
+        else:
+            save_path = os.path.join('checkpoints',
+                                    self.dataset_name,
+                                    self.model_name,
+                                    save_filename)
         self.load_state_dict(t.load(save_path))
         print('Model:'+ save_filename+ ' loads successfully' )
 
@@ -28,9 +36,15 @@ class BasicModule(t.nn.Module):
         保存模型，默认使用“模型名字+Epoche”作为文件名
         '''
         save_filename = (self.model_name + '_epo%s.pth' % epoch_label)
-        save_dir = os.path.join('checkpoints',
-                                self.dataset_name,
-                                self.model_name)
+        if self.annotation != None:
+            save_dir = os.path.join('checkpoints',
+                                    self.dataset_name,
+                                    self.model_name,
+                                    self.annotation)
+        else:
+            save_dir = os.path.join('checkpoints',
+                                    self.dataset_name,
+                                    self.model_name)
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
         save_path = os.path.join(save_dir,save_filename )

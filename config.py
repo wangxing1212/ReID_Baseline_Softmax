@@ -19,6 +19,7 @@ class DefaultConfig(object):
     load_features = False
     re_ranking = True
     random_erasing_p = 0
+    annotation = None
 
 def parse(self,kwargs,show_config=False):
     '''

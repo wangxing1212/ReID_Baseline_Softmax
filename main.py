@@ -23,13 +23,12 @@ from utils import Visualizer
 from utils import RandomErasing
 from datasets import Train_Dataset
 from datasets import Test_Dataset
-vis = Visualizer(opt.env)
+vis = Visualizer()
 num_classes = Train_Dataset(train_val = 'train').num_ids
 ################
 #Train
 ################
 def train(**kwargs):
-   # server.main()
     opt.parse(kwargs,show_config=True)
     
     train_dataloaders = {x: DataLoader(Train_Dataset(train_val = x),

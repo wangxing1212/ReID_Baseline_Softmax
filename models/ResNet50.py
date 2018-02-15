@@ -30,6 +30,7 @@ class ResNet50(BasicModule):
         super(ResNet50, self).__init__()
         self.model_name = 'resnet50'
         self.dataset_name = opt.dataset_name
+        self.annotation = opt.annotation
         
         model_ft = models.resnet50(pretrained=True)
 
