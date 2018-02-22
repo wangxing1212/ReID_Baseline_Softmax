@@ -10,7 +10,7 @@ def import_DukeMTMCAttribute(dataset_dir):
         reiddataset_downloader(dataset_name,dataset_dir)
     label=['backpack',
            'bag',
-           'hangbag',
+           'handbag',
            'boots',
            'gender',
            'hat',

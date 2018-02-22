@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
-def batch_image_show(images_batch, labels, classes, n):
+def batch_image_show(images_batch, classes, n):
     images = images_batch[n].numpy().transpose((1, 2, 0))
     mean = np.array([0.485, 0.456, 0.406])
     std = np.array([0.229, 0.224, 0.225])
