@@ -67,7 +67,7 @@ class Train_Dataset(data.Dataset):
         
         data = Image.open(img_path)
         data = self.transforms(data)
-        return data, label, id
+        return data, label, id, img_path
     
     def __len__(self):
         return len(self.train_data)
@@ -107,7 +107,7 @@ class Test_Dataset(data.Dataset):
         label = self.test_ids.index(id)
         data = Image.open(img_path)
         data = self.transforms(data)
-        return data, label, id, cam_n
+        return data, label, id, cam_n, img_path
     
     def __len__(self):
         return len(self.test_data)

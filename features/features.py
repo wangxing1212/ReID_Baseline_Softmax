@@ -7,9 +7,13 @@ from torch.autograd import Variable
 import torchvision
 from torchvision import datasets, models, transforms
 import numpy as np
-import models
-from tqdm import tqdm
 from config import opt
+import models
+from utils import check_jupyter_run
+if check_jupyter_run():
+    from tqdm import tqdm_notebook as tqdm
+else:
+    from tqdm import tqdm
 
 def fliplr(img):
     '''flip horizontal'''
@@ -24,9 +28,10 @@ def extract_features(model, dataloaders, flip = True):
         features = torch.FloatTensor()
         ids = ()
         cams = torch.LongTensor()
+        img_path = ()
         print('Extracting '+ k +' features')
         for data in tqdm(v):
-            img, label, id, cam = data
+            img, label, id, cam, path = data
             n, c, h, w = img.size()
             ff = torch.FloatTensor(n,num_ftrs).zero_()
             if flip:
@@ -46,10 +51,11 @@ def extract_features(model, dataloaders, flip = True):
             fnorm = torch.norm(ff, p=2, dim=1, keepdim=True)
             ff = ff.div(fnorm.expand_as(ff))
             features = torch.cat((features,ff), 0)
+            img_path = img_path+path
             ids = ids+id
             cams = torch.cat((cams,cam),0)
             
-        all_features[k]=[features.numpy(),np.asarray(ids,dtype=np.int),cams.numpy()]
+        all_features[k]=[features.numpy(),np.asarray(ids,dtype=np.int),cams.numpy(),np.asarray(img_path)]
         
     return all_features
 
@@ -92,3 +98,4 @@ def load_features(**kwargs):
     features = np.load(os.path.join(load_dir,load_filename))
     print('Features load successfully')
     return features.item()
+

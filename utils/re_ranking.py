@@ -28,9 +28,12 @@ Returns:
   final_dist: re-ranked distance, numpy array, shape [num_query, num_gallery]
 """
 
-
 import numpy as np
-from tqdm import tqdm
+from utils.check_jupyter_run import check_jupyter_run
+if check_jupyter_run():
+    from tqdm import tqdm_notebook as tqdm
+else:
+    from tqdm import tqdm
 
 def k_reciprocal_neigh( initial_rank, i, k1):
     forward_k_neigh_index = initial_rank[i,:k1+1]

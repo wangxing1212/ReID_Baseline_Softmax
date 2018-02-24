@@ -17,12 +17,17 @@ from features import save_features
 from features import load_features
 from evaluation import ranking
 from evaluation import evaluate
-from tqdm import tqdm
+from evaluation import save_result
 from visdom import Visdom
 from utils import Visualizer
 from utils import RandomErasing
 from datasets import Train_Dataset
 from datasets import Test_Dataset
+from utils import check_jupyter_run
+if check_jupyter_run():
+    from tqdm import tqdm_notebook as tqdm
+else:
+    from tqdm import tqdm
 vis = Visualizer()
 num_classes = Train_Dataset(train_val = 'train').num_ids
 ################
@@ -80,7 +85,7 @@ def train(**kwargs):
             running_corrects = 0
             
             for data in tqdm(train_dataloaders[phase]):
-                images, labels, ids = data
+                images, labels, ids, img_path = data
                 
                 images = Variable(images.cuda())
                 labels = Variable(labels.cuda())
@@ -136,7 +141,7 @@ def test(**kwargs):
     
     test_dataloaders = {x: DataLoader(Test_Dataset(query_gallery = x),
                                        batch_size=opt.batch_size,
-                                       shuffle=True, num_workers=4)
+                                       shuffle=False, num_workers=4)
                          for x in ['query', 'gallery']}
     
     model = getattr(models, opt.model)(num_classes)
@@ -163,10 +168,13 @@ def test(**kwargs):
     print('-'*30)
     gallery_label = all_features['gallery'][1]
     gallery_cam = all_features['gallery'][2]
+    gallery_imgs_path = all_features['gallery'][3]
     query_label = all_features['query'][1]
     query_cam = all_features['query'][2]
+    query_imgs_path = all_features['query'][3]
     
-    evaluate(result,query_label,query_cam,gallery_label,gallery_cam)
+    result,CMC,mAP = evaluate(result,query_label,query_cam,gallery_label,gallery_cam)
+    save_result(result,query_imgs_path,gallery_imgs_path,CMC,mAP)
     
 if __name__=='__main__':
     import fire
