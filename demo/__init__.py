@@ -1,2 +1,3 @@
 from .train_test_demo import train_test_demo
-from .result_demo import result_demo
+from .select_result_demo import select_result_demo
+from .input_result_demo import input_result_demo

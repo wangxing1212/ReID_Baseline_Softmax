@@ -1,15 +1,26 @@
+import os
 from evaluation import load_result
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from pylab import *
 import numpy as np
-
-def result_demo(R,index,size):
+from config import opt
+import ipywidgets as widgets
+from ipywidgets import interact, interactive, fixed, interact_manual
+from IPython.display import clear_output
+from utils import file_selector
+    
+def show_result(fname,R,size):
     result,CMC,mAP = load_result()
     ranking = result['ranking']
     query_imgs_path = result['query_imgs_path']
     gallery_imgs_path = result['gallery_imgs_path']
 
+    img_path = os.path.join(opt.data_dir,opt.dataset_name,'query',fname)
+    
+    query_index = np.where(query_imgs_path==img_path)
+
+    index = query_index[0][0]
 
     query_label = query_imgs_path[index].split('/')[-1].split('_')[0]
 
@@ -34,3 +45,22 @@ def result_demo(R,index,size):
         img[i].axis('off')
 
     plt.show()
+    
+
+def input_result_demo():
+    
+    file = widgets.Button(description='Open Query Image')
+    display(file)
+        
+    def click(d): 
+        clear_output()
+        display(file,show)
+        file_path = file_selector(opt.data_dir).decode("utf-8")
+        fname = str(file_path).split('/')[-1]
+        interact(show_result, 
+         fname = fname,
+         R=widgets.IntSlider(value=5,min=0,max=20), 
+         size = widgets.IntSlider(value=20,min=0,max=40)
+        )
+
+    file.on_click(click)
