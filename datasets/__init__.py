@@ -5,3 +5,6 @@ from .reid_dataset import import_Market1501Attribute
 from .reid_dataset import import_DukeMTMCAttribute
 from .reid_dataset import import_Market1501Attribute_binary
 from .reid_dataset import import_DukeMTMCAttribute_binary
+from .reid_dataset import import_CUHK03
+from .reid_dataset import cuhk03_to_image
+from .reid_dataset import reiddataset_downloader
