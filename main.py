@@ -1,3 +1,6 @@
+import os
+import time
+import logging
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -7,8 +10,6 @@ from torch.utils.data import Dataset, DataLoader
 import numpy as np
 import torchvision
 from torchvision import datasets, models, transforms
-import time
-import os
 import models
 from datasets import dataset
 from config import opt
@@ -18,17 +19,19 @@ from features import load_features
 from evaluation import ranking
 from evaluation import evaluate
 from evaluation import save_result
-from visdom import Visdom
-from utils import Visualizer
 from utils import RandomErasing
 from datasets import Train_Dataset
 from datasets import Test_Dataset
 from utils import check_jupyter_run
 if check_jupyter_run():
+    from utils import Plotly_with_Update
     from tqdm import tqdm_notebook as tqdm
 else:
     from tqdm import tqdm
-vis = Visualizer()
+    from visdom import Visdom
+    from utils import Visualizer
+    vis = Visualizer()
+
 num_classes = Train_Dataset(train_val = 'train').num_ids
 ################
 #Train
@@ -59,21 +62,22 @@ def train(**kwargs):
                                            gamma=opt.scheduler_gamma)
 
     since = time.time()
-            
-    if vis.check_connection():
-        initial_loss = {
-                    'Train Loss':1.0,
-                    'Train Acc':0.0,
-                    'Val Loss':1.0,
-                    'Val Acc':0.0            
-                }
-        vis.plot_combine_all('Loss',initial_loss)
     
-    print('-'*40)
+    initial_loss = {
+            'Train Loss':1.0,
+            'Train Acc':0.0,
+            'Val Loss':1.0,
+            'Val Acc':0.0            
+        }
+    if check_jupyter_run():
+        graph = Plotly_with_Update(initial_loss)
+        graph.plot()
+    else:
+        if vis.check_connection():
+            vis.plot_combine_all('Loss',initial_loss)
+    
     for epoch in range(opt.num_epochs):
-        
         print('Epoch {}/{}'.format(epoch+1, opt.num_epochs))
-        
         for phase in ['train','val']:
             if phase == 'train':
                 exp_lr_scheduler.step()
@@ -123,9 +127,12 @@ def train(**kwargs):
                 'Val Loss':val_epoch_loss,
                 'Val Acc':val_epoch_acc
         }
-        
-        if vis.check_connection():
-            vis.plot_combine_all('Loss',epoch_loss)
+        if check_jupyter_run():
+            graph.update(epoch_loss)
+            graph.plot()
+        else:
+            if vis.check_connection():
+                vis.plot_combine_all('Loss',epoch_loss)
             
         print('-'*10)
         

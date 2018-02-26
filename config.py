@@ -36,6 +36,7 @@ def parse(self,kwargs,show_config=False):
             if not k.startswith('__'):
                 if k != 'parse':
                     print(k,': ',getattr(self,k))
+        print('-'*30)
 
 DefaultConfig.parse = parse
 opt =DefaultConfig()
