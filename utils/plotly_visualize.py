@@ -1,9 +1,11 @@
 import plotly
-plotly.offline.init_notebook_mode(connected=True)
 from plotly.offline import iplot
 from plotly.graph_objs import Scatter, Layout
 from IPython.display import clear_output
 from config import opt
+from .check_jupyter_run import check_jupyter_run
+if check_jupyter_run():
+    plotly.offline.init_notebook_mode(connected=True)
 
 class Plotly_with_Update(object):
     def __init__(self,y):

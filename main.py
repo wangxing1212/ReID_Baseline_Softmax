@@ -28,17 +28,26 @@ if check_jupyter_run():
     from tqdm import tqdm_notebook as tqdm
 else:
     from tqdm import tqdm
-    from visdom import Visdom
+    #from visdom import Visdom
     from utils import Visualizer
     vis = Visualizer()
 
+if not os.path.exists('log'):
+    os.makedirs('log') 
+logger = logging.getLogger('train_loss')
+logger.setLevel(logging.INFO)
+fh = logging.FileHandler('log/train_loss.log')
+fh.setLevel(logging.INFO)
+ch = logging.StreamHandler()
+ch.setLevel(logging.INFO)
+logger.addHandler(ch)
+logger.addHandler(fh)
 num_classes = Train_Dataset(train_val = 'train').num_ids
 ################
 #Train
 ################
 def train(**kwargs):
     opt.parse(kwargs,show_config=True)
-    
     train_dataloaders = {x: DataLoader(Train_Dataset(train_val = x),
                                        batch_size=opt.batch_size,
                                        shuffle=True, num_workers=4)
@@ -109,7 +118,7 @@ def train(**kwargs):
                 
             epoch_loss = running_loss / dataset_sizes[phase]
             epoch_acc = running_corrects / dataset_sizes[phase]
-            print('{} Loss: {:.4f} Acc: {:.4f}'.format(phase, epoch_loss, epoch_acc))
+            logger.info('{} Loss: {:.4f} Acc: {:.4f}'.format(phase, epoch_loss, epoch_acc))
             
             if phase == 'train':
                 train_epoch_loss = epoch_loss

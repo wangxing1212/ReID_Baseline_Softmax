@@ -1,3 +1,4 @@
 visdom
 tqdm
 plotly
+fire
