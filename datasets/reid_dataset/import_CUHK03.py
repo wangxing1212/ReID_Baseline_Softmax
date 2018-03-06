@@ -5,7 +5,7 @@ def import_CUHK03(dataset_dir, detected = False):
     cuhk03_dir = os.path.join(dataset_dir,'CUHK03')
     
     if not os.path.exists(cuhk03_dir):
-        reiddataset_downloader('CUHK03',dataset_dir)
+        reiddataset_downloader(dataset_dir, 'CUHK03')
     
     if not detected:
         cuhk03_dir = os.path.join(cuhk03_dir , 'labeled')

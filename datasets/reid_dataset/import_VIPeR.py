@@ -3,7 +3,7 @@ from .reiddataset_downloader import *
 def import_VIPeR(dataset_dir):
     viper_dir = os.path.join(dataset_dir , 'VIPeR')
     if not os.path.exists(viper_dir):
-        reiddataset_downloader('VIPeR',dataset_dir)
+        reiddataset_downloader(dataset_dir , 'VIPeR')
         
     file_list_a=os.listdir(os.path.join(viper_dir,'cam_a'))
     file_list_b=os.listdir(os.path.join(viper_dir,'cam_b'))

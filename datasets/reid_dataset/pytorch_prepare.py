@@ -1,7 +1,7 @@
 import os
 from shutil import copyfile
 
-def pytorch_prepare(dataset_name, data_dir):
+def pytorch_prepare(data_dir, dataset_name):
     dataset_dir = os.path.join(data_dir, dataset_name)
 
     if not os.path.isdir(dataset_dir):

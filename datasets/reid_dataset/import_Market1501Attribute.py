@@ -6,7 +6,7 @@ def import_Market1501Attribute(dataset_dir):
     dataset_name = 'Market1501Attribute'
     train,test,query = import_Market1501(dataset_dir)
     if not os.path.exists(os.path.join(dataset_dir,dataset_name)):
-        reiddataset_downloader(dataset_name,dataset_dir)
+        reiddataset_downloader(dataset_dir,dataset_name)
     label=['age',
            'backpack',
            'bag',

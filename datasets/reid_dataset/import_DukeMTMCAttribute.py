@@ -7,7 +7,7 @@ def import_DukeMTMCAttribute(dataset_dir):
     dataset_name = 'DukeMTMCAttribute'
     train,test,query = import_DukeMTMC(dataset_dir)
     if not os.path.exists(os.path.join(dataset_dir,dataset_name)):
-        reiddataset_downloader(dataset_name,dataset_dir)
+        reiddataset_downloader(dataset_dir, dataset_name)
     label=['backpack',
            'bag',
            'handbag',
