@@ -1,6 +1,5 @@
 import warnings
 class DefaultConfig(object):
-    env = 'reid_baseline' # visdom 环境
     #data_dir = './datasets/'
     data_dir = '/home/linshan/Datasets'
     dataset_name = 'Market1501'
@@ -20,6 +19,7 @@ class DefaultConfig(object):
     re_ranking = True
     random_erasing_p = 0
     annotation = None
+    hdf5 = True
 
 def parse(self,kwargs,show_config=False):
     '''

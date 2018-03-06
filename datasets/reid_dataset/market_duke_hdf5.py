@@ -5,7 +5,7 @@ import os
 import h5py
 import numpy as np
 from PIL import  Image
-from reid_dataset import market_duke
+from .market_duke import market_duke
 
 def market_duke_hdf5(data_dir,dataset_name,save_dir=os.getcwd()):
     phase_list = ['train','query','gallery']

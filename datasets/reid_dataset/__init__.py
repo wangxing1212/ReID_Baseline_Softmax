@@ -9,8 +9,9 @@ from .import_Market1501Attribute import import_Market1501Attribute_binary
 from .import_DukeMTMC import import_DukeMTMC
 from .import_DukeMTMCAttribute import import_DukeMTMCAttribute
 from .import_DukeMTMCAttribute import import_DukeMTMCAttribute_binary
+from .import_MarketDuke import import_MarketDuke
 from .pytorch_prepare import pytorch_prepare
 from .pytorch_prepare import pytorch_prepare_all
 from .market_duke import market_duke
-from .market_duke_hdf5 import market_duke_hdf5
+from .marketduke_to_hdf5 import marketduke_to_hdf5
 from .cuhk03_to_image import cuhk03_to_image

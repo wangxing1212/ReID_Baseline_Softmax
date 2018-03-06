@@ -1,4 +1,6 @@
+requests
+h5py
+scipy
 visdom
-tqdm
 plotly
-fire
+tqdm

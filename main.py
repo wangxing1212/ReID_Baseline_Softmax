@@ -11,7 +11,6 @@ import numpy as np
 import torchvision
 from torchvision import datasets, models, transforms
 import models
-from datasets import dataset
 from config import opt
 from features import extract_features
 from features import save_features
@@ -20,18 +19,15 @@ from evaluation import ranking
 from evaluation import evaluate
 from evaluation import save_result
 from utils import RandomErasing
-from datasets import Train_Dataset
-from datasets import Test_Dataset
 from utils import check_jupyter_run
 if check_jupyter_run():
     from utils import Plotly_with_Update
     from tqdm import tqdm_notebook as tqdm
 else:
     from tqdm import tqdm
-    #from visdom import Visdom
     from utils import Visualizer
     vis = Visualizer()
-
+    
 if not os.path.exists('log'):
     os.makedirs('log') 
 logger = logging.getLogger('train_loss')
@@ -42,16 +38,25 @@ ch = logging.StreamHandler()
 ch.setLevel(logging.INFO)
 logger.addHandler(ch)
 logger.addHandler(fh)
-num_classes = Train_Dataset(train_val = 'train').num_ids
+
 ################
 #Train
 ################
 def train(**kwargs):
     opt.parse(kwargs,show_config=True)
+    if opt.hdf5:
+        from datasets import Train_Dataset_HDF5 as Train_Dataset
+        from datasets import Test_Dataset_HDF5 as Test_Dataset
+    else:
+        from datasets import Train_Dataset_IMAGE as Train_Dataset
+        from datasets import Test_Dataset_IMAGE as Test_Dataset
+        
+    num_classes = Train_Dataset(train_val = 'train').num_ids
+        
     train_dataloaders = {x: DataLoader(Train_Dataset(train_val = x),
                                        batch_size=opt.batch_size,
                                        shuffle=True, num_workers=4)
-                         for x in ['train', 'val']}
+                                       for x in ['train', 'val']}
     
     dataset_sizes = {x:len(Train_Dataset(train_val = x)) for x in ['train', 'val']}
         
@@ -98,7 +103,7 @@ def train(**kwargs):
             running_corrects = 0
             
             for data in tqdm(train_dataloaders[phase]):
-                images, labels, ids, img_path = data
+                images, labels, ids = data
                 
                 images = Variable(images.cuda())
                 labels = Variable(labels.cuda())
@@ -154,6 +159,14 @@ def train(**kwargs):
 ################
 def test(**kwargs):
     opt.parse(kwargs, show_config = True)
+    if opt.hdf5:
+        from datasets import Train_Dataset_HDF5 as Train_Dataset
+        from datasets import Test_Dataset_HDF5 as Test_Dataset
+    else:
+        from datasets import Train_Dataset_IMAGE as Train_Dataset
+        from datasets import Test_Dataset_IMAGE as Test_Dataset
+        
+    num_classes = Train_Dataset(train_val = 'train').num_ids
     
     test_dataloaders = {x: DataLoader(Test_Dataset(query_gallery = x),
                                        batch_size=opt.batch_size,
