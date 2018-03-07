@@ -20,9 +20,9 @@ class Train_Dataset_IMAGE(data.Dataset):
             self.num_ids = len(train['ids'])
         elif train_val == 'val':
             val_data = {'data':[],'ids':[]}
-            for path,index,id,cam_n in train['data']:
+            for path,index,id,cam,name in train['data']:
                 if id not in val_data['ids']:
-                    val_data['data'].append([path,index,id,cam_n])
+                    val_data['data'].append([path,index,id,cam,name])
                     val_data['ids'].append(id)
             self.train_data = val_data['data']
             self.train_ids = val_data['ids']
@@ -63,10 +63,12 @@ class Train_Dataset_IMAGE(data.Dataset):
         img_path = self.train_data[index][0]
         index = self.train_data[index][1]
         id = self.train_data[index][2]
+        cam = self.train_data[index][3]
+        name = self.train_data[index][4]
         
         data = Image.open(img_path)
         data = self.transforms(data)
-        return data, index, id
+        return data, index, id, cam, name
     
     def __len__(self):
         return len(self.train_data)
@@ -103,11 +105,12 @@ class Test_Dataset_IMAGE(data.Dataset):
         img_path = self.test_data[index][0]
         index = self.test_data[index][1]
         id = self.test_data[index][2]
-        cam_n = self.test_data[index][3]
+        cam = self.test_data[index][3]
+        name = self.test_data[index][4]
         
         data = Image.open(img_path)
         data = self.transforms(data)
-        return data, index, id, cam_n
+        return data, index, id, cam, name
     
     def __len__(self):
         return len(self.test_data)

@@ -55,7 +55,8 @@ def train(**kwargs):
         
     train_dataloaders = {x: DataLoader(Train_Dataset(train_val = x),
                                        batch_size=opt.batch_size,
-                                       shuffle=True, num_workers=4)
+                                       shuffle=True, 
+                                       num_workers=opt.num_workers)
                                        for x in ['train', 'val']}
     
     dataset_sizes = {x:len(Train_Dataset(train_val = x)) for x in ['train', 'val']}
@@ -98,28 +99,28 @@ def train(**kwargs):
                 model.train(True)
             else:
                 model.train(False)
-            
+                
             running_loss = 0.0
             running_corrects = 0
             
             for data in tqdm(train_dataloaders[phase]):
-                images, labels, ids = data
+                images, indices, ids, cams, names = data
                 
                 images = Variable(images.cuda())
-                labels = Variable(labels.cuda())
+                indices = Variable(indices.cuda())
                 
                 optimizer.zero_grad()
                 
                 outputs = model(images)
                 _, preds = torch.max(outputs.data,1)
-                loss = criterion(outputs, labels)
+                loss = criterion(outputs, indices)
                 
                 if phase == 'train':
                     loss.backward()
                     optimizer.step()
                 
                 running_loss += loss.data[0]
-                running_corrects += torch.sum(preds == labels.data)
+                running_corrects += torch.sum(preds == indices.data)
                 
             epoch_loss = running_loss / dataset_sizes[phase]
             epoch_acc = running_corrects / dataset_sizes[phase]
@@ -141,6 +142,7 @@ def train(**kwargs):
                 'Val Loss':val_epoch_loss,
                 'Val Acc':val_epoch_acc
         }
+        
         if check_jupyter_run():
             graph.update(epoch_loss)
             graph.plot()
@@ -170,7 +172,8 @@ def test(**kwargs):
     
     test_dataloaders = {x: DataLoader(Test_Dataset(query_gallery = x),
                                        batch_size=opt.batch_size,
-                                       shuffle=False, num_workers=4)
+                                       shuffle=False,           
+                                       num_workers=opt.num_workers)
                          for x in ['query', 'gallery']}
     
     model = getattr(models, opt.model)(num_classes)
@@ -195,15 +198,15 @@ def test(**kwargs):
     result = ranking(query_feature,gallery_feature)
     
     print('-'*30)
-    gallery_label = all_features['gallery'][1]
-    gallery_cam = all_features['gallery'][2]
-    gallery_imgs_path = all_features['gallery'][3]
     query_label = all_features['query'][1]
     query_cam = all_features['query'][2]
-    query_imgs_path = all_features['query'][3]
+    query_name = all_features['query'][3]
+    gallery_label = all_features['gallery'][1]
+    gallery_cam = all_features['gallery'][2]
+    gallery_name = all_features['gallery'][3]
     
     result,CMC,mAP = evaluate(result,query_label,query_cam,gallery_label,gallery_cam)
-    save_result(result,query_imgs_path,gallery_imgs_path,CMC,mAP)
+    save_result(result,query_name,gallery_name,CMC,mAP)
     
 if __name__=='__main__':
     import fire

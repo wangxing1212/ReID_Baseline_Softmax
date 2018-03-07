@@ -67,13 +67,12 @@ class Train_Dataset_HDF5(data.Dataset):
     def __getitem__(self,index):
         name = self.train_names[index]
         dataset = h5py.File(self.hdf5_path,'r')
-        
         i = dataset['train'][name]['index'].value   
         id = dataset['train'][name]['id'].value
-
+        cam = dataset['train'][name]['cam'].value
         data = Image.fromarray(np.uint8(dataset['train'][name]['img']))
         data = self.transforms(data)
-        return data, i, id
+        return data, i, id, cam, name
     
     def __len__(self):
         return len(self.train_names)
@@ -112,7 +111,7 @@ class Test_Dataset_HDF5(data.Dataset):
         
         if self.query_gallery == 'query':
             dataset = f['query']
-        elif query_gallery == 'gallery':
+        elif self.query_gallery == 'gallery':
             dataset = f['gallery']
         else:
             print('Input shoud only be query or gallery;')
@@ -120,10 +119,10 @@ class Test_Dataset_HDF5(data.Dataset):
         
         id = dataset[name]['id'].value
         i = dataset[name]['index'].value
-
+        cam = dataset[name]['cam'].value
         data = Image.fromarray(np.uint8(dataset[name]['img']))
         data = self.transforms(data)
-        return data, i, id
+        return data, i, id, cam, name
     
     def __len__(self):
         return len(self.test_names)

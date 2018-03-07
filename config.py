@@ -20,6 +20,7 @@ class DefaultConfig(object):
     random_erasing_p = 0
     annotation = None
     hdf5 = True
+    num_workers = 4
 
 def parse(self,kwargs,show_config=False):
     '''

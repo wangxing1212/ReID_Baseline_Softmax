@@ -22,11 +22,9 @@ def import_MarketDuke(data_dir, dataset_name):
         for name in file_list:
             if name[-3:]=='jpg':
                 id = name.split('_')[0]
-                cam_n = int(name.split('_')[1][1])
+                cam = int(name.split('_')[1][1])
                 images = os.path.join(name_dir,name)
                 if id not in globals()[group]['ids']:
                     globals()[group]['ids'].append(id)
-                globals()[group]['data'].append([images,globals()[group]['ids'].index(id),id,cam_n])
-                if id not in globals()[group]['ids']:
-                    globals()[group]['ids'].append(id)
+                globals()[group]['data'].append([images,globals()[group]['ids'].index(id),id,cam,name.split('.')[0]])
     return train,query,gallery

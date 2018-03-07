@@ -44,7 +44,6 @@ def ranking(query_feature, gallery_feature, **kwargs):
         print('Generating ranking list for each query image')
         for i in tqdm(range(distance.shape[0])):
             ranking[i]=np.argsort(distance[i])[::-1]
-    
     return ranking
 
 def evaluate(ranking,ql,qc,gl,gc):
@@ -57,9 +56,8 @@ def evaluate(ranking,ql,qc,gl,gc):
 
         query_index = np.asarray(np.where(np.asarray(gl)==ql[i])).flatten()
         camera_index = np.asarray(np.where(np.asarray(gc)==qc[i])).flatten()
-
         good_index = np.setdiff1d(query_index, camera_index, assume_unique=True)
-        junk_index1 = np.asarray(np.where(np.asarray(gl)==-1)).flatten()
+        junk_index1 = np.array([i for i, x in enumerate(gl) if x == '-1'])
         junk_index2 = np.intersect1d(query_index, camera_index)
         junk_index = np.append(junk_index2, junk_index1) #.flatten())
 
@@ -124,8 +122,8 @@ def save_result(result,query_imgs_path,gallery_imgs_path,CMC,mAP,**kwargs):
     
     temp = {
     'ranking':result,
-    'query_imgs_path': query_imgs_path,
-    'gallery_imgs_path':gallery_imgs_path
+    'query_name': query_imgs_path,
+    'gallery_name':gallery_imgs_path
     }
     
     np.save(save_path+'_result', temp)

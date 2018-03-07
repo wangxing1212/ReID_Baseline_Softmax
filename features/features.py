@@ -26,36 +26,36 @@ def extract_features(model, dataloaders, flip = True):
     all_features = dict.fromkeys(dataloaders.keys())
     for k,v in dataloaders.items():
         features = torch.FloatTensor()
-        ids = ()
-        cams = torch.LongTensor()
-        img_path = ()
+        id_list = []
+        cam_list = []
+        name_list = []
         print('Extracting '+ k +' features')
         for data in tqdm(v):
-            img, label, id, cam, path = data
-            n, c, h, w = img.size()
+            images, indices, ids, cams, names = data
+            n, c, h, w = images.size()
             ff = torch.FloatTensor(n,num_ftrs).zero_()
             if flip:
                 for i in range(2):
                     if(i==1):
-                        img = fliplr(img)
-                    input_img = Variable(img.cuda())
+                        images = fliplr(images)
+                    input_img = Variable(images.cuda())
                     outputs = model(input_img) 
                     f = outputs.data.cpu()
                     #print(f.size())
                     ff = ff+f
             else:
-                input_img = Variable(img.cuda())
+                input_img = Variable(images.cuda())
                 outputs = model(input_img) 
                 ff = outputs.data.cpu()
             # norm feature
             fnorm = torch.norm(ff, p=2, dim=1, keepdim=True)
             ff = ff.div(fnorm.expand_as(ff))
             features = torch.cat((features,ff), 0)
-            img_path = img_path+path
-            ids = ids+id
-            cams = torch.cat((cams,cam),0)
+            name_list = name_list + list(names)
+            id_list = id_list + list(ids)            
+            cam_list = cam_list + list(cams.numpy())
             
-        all_features[k]=[features.numpy(),np.asarray(ids,dtype=np.int),cams.numpy(),np.asarray(img_path)]
+        all_features[k]=[features.numpy(),id_list,cam_list,name_list]
         
     return all_features
 
