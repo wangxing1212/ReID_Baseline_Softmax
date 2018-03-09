@@ -4,7 +4,7 @@ def import_CUHK01(dataset_dir):
     cuhk01_dir = os.path.join(dataset_dir,'CUHK01')
     
     if not os.path.exists(cuhk01_dir):
-        reiddataset_downloader(dataset_dir,'CUHK01')
+        print('Please Download the CUHK01 Dataset')
     
     file_list=os.listdir(cuhk01_dir)
     name_dict={}

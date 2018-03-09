@@ -100,15 +100,17 @@ def save_result(result,query_imgs_path,gallery_imgs_path,CMC,mAP,**kwargs):
     opt.parse(kwargs, show_config = False)
     
     save_filename = (opt.dataset_name+'_'+opt.model + '_epo%s' % opt.load_epoch_label)
-    if opt.annotation != None:
-        save_dir = os.path.join('evaluation',
-                                opt.dataset_name,
-                                opt.model,
-                                opt.annotation)
+    
+    save_dir = os.path.join('evaluation',opt.dataset_name, opt.model)
+    
+    if not opt.re_ranking:
+        save_dir = os.path.join(save_dir,'Original')
     else:
-        save_dir = os.path.join('evaluation',
-                                opt.dataset_name,
-                                opt.model)
+        save_dir = os.path.join(save_dir,'Re-Ranked')
+        
+    if opt.annotation != None:
+        save_dir = os.path.join(save_dir, opt.annotation)
+
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
         
@@ -130,31 +132,35 @@ def save_result(result,query_imgs_path,gallery_imgs_path,CMC,mAP,**kwargs):
     print('Result saved to '+save_path)
     
 def load_result(**kwargs):
-    opt.parse(kwargs, show_config = False)        
-    result_filename = (opt.dataset_name+'_'+
-                     opt.model + '_epo%s_result.npy' % opt.load_epoch_label)
+    try:
+        opt.parse(kwargs, show_config = False)        
+        result_filename = (opt.dataset_name+'_'+
+                         opt.model + '_epo%s_result.npy' % opt.load_epoch_label)
+
+        cmc_map_filename = (opt.dataset_name+'_'+
+                         opt.model + '_epo%s_CMC_mAP.csv' % opt.load_epoch_label)
+
+        load_dir = os.path.join('evaluation',opt.dataset_name, opt.model)
+
+        if not opt.re_ranking:
+            load_dir = os.path.join(load_dir,'Original')
+        else:
+            load_dir = os.path.join(load_dir,'Re-Ranked')
+
+        if opt.annotation != None:
+            load_dir = os.path.join(load_dir, opt.annotation)
+
+        if not os.path.exists(load_dir):
+            print('The result is not existed, please evaluation first') 
+
+        result = np.load(os.path.join(load_dir,result_filename))
+
+        with open(os.path.join(load_dir,cmc_map_filename)) as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                CMC = row['CMC']
+                mAP = row['mAP']
+        return result.item(),CMC,mAP
+    except:
+        print('Error')
     
-    cmc_map_filename = (opt.dataset_name+'_'+
-                     opt.model + '_epo%s_CMC_mAP.csv' % opt.load_epoch_label)
-    if opt.annotation != None:
-        load_dir = os.path.join('evaluation',
-                                opt.dataset_name,
-                                opt.model,
-                                opt.annotation)
-    else:
-        load_dir = os.path.join('evaluation',
-                                opt.dataset_name,
-                                opt.model)
-    if not os.path.exists(load_dir):
-        print('The result is not existed, please evaluation first') 
-        
-    result = np.load(os.path.join(load_dir,result_filename))
-    
-    with open(os.path.join(load_dir,cmc_map_filename)) as csvfile:
-        reader = csv.DictReader(csvfile)
-        for row in reader:
-            CMC = row['CMC']
-            mAP = row['mAP']
-    
-    print('Result loads successfully')
-    return result.item(),CMC,mAP

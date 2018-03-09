@@ -1,7 +1,7 @@
 import warnings
 class DefaultConfig(object):
-    #data_dir = './datasets/'
-    data_dir = '/home/linshan/Datasets'
+    data_dir = './datasets/'
+    #data_dir = '/home/linshan/Datasets'
     dataset_name = 'Market1501'
     batch_size = 32
     num_epochs = 50

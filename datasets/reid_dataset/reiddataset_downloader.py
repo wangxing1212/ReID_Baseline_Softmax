@@ -39,10 +39,13 @@ def reiddataset_downloader(data_dir, data_name, hdf5 = True):
         if not os.path.exists(dataset_dir):
             os.makedirs(dataset_dir)
         destination = os.path.join(dataset_dir , data_name+'.hdf5')
-        id = dataset_hdf5[data_name]
-        print("Downloading %s as HDF5 Formate" % data_name)
-        gdrive_downloader(destination, id)
-        print("Done")
+        if not os.path.isfile(destination):
+            id = dataset_hdf5[data_name]
+            print("Downloading %s in HDF5 Formate" %data_name)
+            gdrive_downloader(destination, id)
+            print("Done")
+        else:
+            print("Dataset Check Success: %s exists!" %data_name)
     else:
         data_dir_exist = os.path.join(data_dir , data_name)
 
@@ -56,7 +59,7 @@ def reiddataset_downloader(data_dir, data_name, hdf5 = True):
 
             id = dataset[data_name]
 
-            print("Downloading %s as Original Images" % data_name)
+            print("Downloading %s in Original Images" % data_name)
             gdrive_downloader(destination, id)
 
             zip_ref = zipfile.ZipFile(destination)

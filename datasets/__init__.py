@@ -2,7 +2,6 @@ from .dataset_image import Train_Dataset_IMAGE
 from .dataset_image import Test_Dataset_IMAGE
 from .dataset_hdf5 import Train_Dataset_HDF5
 from .dataset_hdf5 import Test_Dataset_HDF5
-from .reid_dataset import market_duke
 from .reid_dataset import import_MarketDuke
 from .reid_dataset import import_Market1501Attribute
 from .reid_dataset import import_DukeMTMCAttribute

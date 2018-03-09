@@ -3,7 +3,7 @@ from .reiddataset_downloader import *
 def import_Market1501(dataset_dir):
     market1501_dir = os.path.join(dataset_dir,'Market1501')
     if not os.path.exists(market1501_dir):
-        reiddataset_downloader(dataset_dir,'Market1501')
+        print('Please Download Market1501 Dataset')
     data_group = ['train','test','query']
     for group in data_group:
         if group == 'train':

@@ -12,6 +12,5 @@ from .import_DukeMTMCAttribute import import_DukeMTMCAttribute_binary
 from .import_MarketDuke import import_MarketDuke
 from .pytorch_prepare import pytorch_prepare
 from .pytorch_prepare import pytorch_prepare_all
-from .market_duke import market_duke
 from .marketduke_to_hdf5 import marketduke_to_hdf5
 from .cuhk03_to_image import cuhk03_to_image

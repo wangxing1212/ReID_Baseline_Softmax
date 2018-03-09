@@ -4,6 +4,7 @@ def import_MarketDuke(data_dir, dataset_name):
     dataset_dir = os.path.join(data_dir,dataset_name)
     
     if not os.path.exists(dataset_dir):
+        print('Please Download '+dataset_name+ ' Dataset')
         reiddataset_downloader(dataset_name,data_dir)
         
     dataset_dir = os.path.join(data_dir,dataset_name)

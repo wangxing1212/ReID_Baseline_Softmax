@@ -94,8 +94,8 @@ def load_features(**kwargs):
                                 opt.dataset_name,
                                 opt.model)
     if not os.path.exists(load_dir):
-        print('The features are not existed, please extract first') 
+        print('Features are not existed, please do feature extraction first') 
     features = np.load(os.path.join(load_dir,load_filename))
-    print('Features load successfully')
+    print('Features Load successfully')
     return features.item()
 

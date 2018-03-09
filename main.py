@@ -11,6 +11,7 @@ import numpy as np
 import torchvision
 from torchvision import datasets, models, transforms
 import models
+from datasets import reiddataset_downloader
 from config import opt
 from features import extract_features
 from features import save_features
@@ -50,6 +51,9 @@ def train(**kwargs):
     else:
         from datasets import Train_Dataset_IMAGE as Train_Dataset
         from datasets import Test_Dataset_IMAGE as Test_Dataset
+        
+    reiddataset_downloader(opt.data_dir,opt.dataset_name,opt.hdf5)
+        
         
     num_classes = Train_Dataset(train_val = 'train').num_ids
         
@@ -167,6 +171,8 @@ def test(**kwargs):
     else:
         from datasets import Train_Dataset_IMAGE as Train_Dataset
         from datasets import Test_Dataset_IMAGE as Test_Dataset
+        
+    reiddataset_downloader(opt.data_dir,opt.dataset_name,opt.hdf5)        
         
     num_classes = Train_Dataset(train_val = 'train').num_ids
     
