@@ -8,7 +8,7 @@ def import_Market1501(dataset_dir):
     for group in data_group:
         if group == 'train':
             name_dir = os.path.join(market1501_dir , 'bounding_box_train')
-        elif group == 'test':
+        elif group == 'query':
             name_dir = os.path.join(market1501_dir, 'query')
         else:
             name_dir = os.path.join(market1501_dir, 'bounding_box_test')
