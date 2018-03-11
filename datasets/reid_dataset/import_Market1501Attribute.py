@@ -4,10 +4,10 @@ from .reiddataset_downloader import *
 import scipy.io
 def import_Market1501Attribute(dataset_dir):
     dataset_name = 'Market1501Attribute'
-    train,test,query = import_Market1501(dataset_dir)
+    train,query,test = import_Market1501(dataset_dir)
     if not os.path.exists(os.path.join(dataset_dir,dataset_name)):
         print('Please Download the Market1501Attribute Dataset')
-    label=['age',
+    train_label=['age',
            'backpack',
            'bag',
            'handbag',
@@ -34,6 +34,35 @@ def import_Market1501Attribute(dataset_dir):
            'hair',
            'hat',
            'gender']
+    
+    test_label=['age',
+           'backpack',
+           'bag',
+           'handbag',
+           'clothes',
+           'down',
+           'up',
+           'hair',
+           'hat',
+           'gender',
+           'upblack',
+           'upwhite',
+           'upred',
+           'uppurple',
+           'upyellow',
+           'upgray',
+           'upblue',
+           'upgreen',
+           'downblack',
+           'downwhite',
+           'downpink',
+           'downpurple',
+           'downyellow',
+           'downgray',
+           'downblue',
+           'downgreen',
+           'downbrown'
+           ]
     
     train_person_id = []
     for personid in train:
@@ -64,10 +93,19 @@ def import_Market1501Attribute(dataset_dir):
                 if id not in locals()[group_name]:
                     locals()[group_name][id]=[]
                 locals()[group_name][id].append(f['market_attribute'][0][0][test_train][0][0][attribute_id][0][person_id])
-    return train_attribute,test_attribute, label
+    
+    unified_train_atr = {}
+    for k,v in train_attribute.items():
+        temp_atr = [0]*len(test_label)
+        for i in range(len(test_label)):
+            temp_atr[i]=v[train_label.index(test_label[i])]
+        unified_train_atr[k] = temp_atr
+    
+    return unified_train_atr,test_attribute, test_label
 
 def import_Market1501Attribute_binary(dataset_dir):
-    train_market_attr, test_market_attr,label = import_Market1501Attribute(dataset_dir)
+    train_market_attr, test_market_attr, label = import_Market1501Attribute(dataset_dir)
+    
     for id in train_market_attr:
         train_market_attr[id][:] = [x - 1 for x in train_market_attr[id]]
         if train_market_attr[id][0] == 0:
@@ -127,4 +165,5 @@ def import_Market1501Attribute_binary(dataset_dir):
     label.insert(1,'teenager')
     label.insert(2,'adult')
     label.insert(3,'old')
-    return train_market_attr, test_market_attr,label
+    
+    return train_market_attr, test_market_attr, label

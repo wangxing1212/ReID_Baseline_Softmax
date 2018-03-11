@@ -5,7 +5,7 @@ import scipy.io
         
 def import_DukeMTMCAttribute(dataset_dir):
     dataset_name = 'DukeMTMCAttribute'
-    train,test,query = import_DukeMTMC(dataset_dir)
+    train,query,test = import_DukeMTMC(dataset_dir)
     if not os.path.exists(os.path.join(dataset_dir,dataset_name)):
         print('Please Download the DukeMTMCATTributes Dataset')
     label=['backpack',

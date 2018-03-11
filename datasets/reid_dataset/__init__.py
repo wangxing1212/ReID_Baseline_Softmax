@@ -10,6 +10,7 @@ from .import_DukeMTMC import import_DukeMTMC
 from .import_DukeMTMCAttribute import import_DukeMTMCAttribute
 from .import_DukeMTMCAttribute import import_DukeMTMCAttribute_binary
 from .import_MarketDuke import import_MarketDuke
+from .import_MarketDuke_nodistractors import import_MarketDuke_nodistractors
 from .pytorch_prepare import pytorch_prepare
 from .pytorch_prepare import pytorch_prepare_all
 from .marketduke_to_hdf5 import marketduke_to_hdf5

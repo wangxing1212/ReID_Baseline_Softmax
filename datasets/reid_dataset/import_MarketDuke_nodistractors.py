@@ -1,6 +1,6 @@
 import os
 from .reiddataset_downloader import *
-def import_MarketDuke(data_dir, dataset_name):
+def import_MarketDuke_nodistractors(data_dir, dataset_name):
     dataset_dir = os.path.join(data_dir,dataset_name)
     
     if not os.path.exists(dataset_dir):
@@ -24,7 +24,8 @@ def import_MarketDuke(data_dir, dataset_name):
                 id = name.split('_')[0]
                 cam = int(name.split('_')[1][1])
                 images = os.path.join(name_dir,name)
-                if id not in globals()[group]['ids']:
-                    globals()[group]['ids'].append(id)
-                globals()[group]['data'].append([images,globals()[group]['ids'].index(id),id,cam,name.split('.')[0]])
+                if (id!='0000' and id !='-1'):
+                    if id not in globals()[group]['ids']:
+                        globals()[group]['ids'].append(id)
+                    globals()[group]['data'].append([images,globals()[group]['ids'].index(id),id,cam,name.split('.')[0]])
     return train,query,gallery
