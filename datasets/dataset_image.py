@@ -8,11 +8,8 @@ from config import opt
 from utils import RandomErasing
 
 class Train_Dataset_IMAGE(data.Dataset):
-
-    def __init__(self,transforms = None, train_val = 'train', **kwargs):
-        opt.parse(kwargs,show_config=False)
-        
-        train,query,gallery = import_MarketDuke(opt.data_dir,opt.dataset_name)
+    def __init__(self,transforms = None, train_val = 'train', data_dir=opt.data_dir, dataset_name=opt.dataset_name):        
+        train,query,gallery = import_MarketDuke(data_dir,dataset_name)
 
         if train_val == 'train':
             self.train_data = train['data']
@@ -56,15 +53,15 @@ class Train_Dataset_IMAGE(data.Dataset):
                         ])
 
         
-    def __getitem__(self,index):
+    def __getitem__(self,i):
         '''
         一次返回一张图片的数据
         '''
-        img_path = self.train_data[index][0]
-        index = self.train_data[index][1]
-        id = self.train_data[index][2]
-        cam = self.train_data[index][3]
-        name = self.train_data[index][4]
+        img_path = self.train_data[i][0]
+        index = self.train_data[i][1]
+        id = self.train_data[i][2]
+        cam = self.train_data[i][3]
+        name = self.train_data[i][4]
         
         data = Image.open(img_path)
         data = self.transforms(data)
@@ -78,9 +75,8 @@ class Train_Dataset_IMAGE(data.Dataset):
     
     
 class Test_Dataset_IMAGE(data.Dataset):
-    def __init__(self, transforms = None, query_gallery='query', **kwargs):
-        opt.parse(kwargs,show_config=False)
-        train,query,gallery = import_MarketDuke(opt.data_dir,opt.dataset_name)
+    def __init__(self, transforms = None, query_gallery='query', data_dir=opt.data_dir, dataset_name=opt.dataset_name):            
+        train,query,gallery = import_MarketDuke(data_dir,dataset_name)
         
         if query_gallery == 'query':
             self.test_data = query['data']
@@ -98,15 +94,15 @@ class Test_Dataset_IMAGE(data.Dataset):
                     T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
                     ])
                 
-    def __getitem__(self,index):
+    def __getitem__(self,i):
         '''
         一次返回一张图片的数据
         '''
-        img_path = self.test_data[index][0]
-        index = self.test_data[index][1]
-        id = self.test_data[index][2]
-        cam = self.test_data[index][3]
-        name = self.test_data[index][4]
+        img_path = self.test_data[i][0]
+        index = self.test_data[i][1]
+        id = self.test_data[i][2]
+        cam = self.test_data[i][3]
+        name = self.test_data[i][4]
         
         data = Image.open(img_path)
         data = self.transforms(data)

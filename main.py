@@ -55,9 +55,13 @@ def train(**kwargs):
     reiddataset_downloader(opt.data_dir,opt.dataset_name,opt.hdf5)
         
         
-    num_classes = Train_Dataset(train_val = 'train').num_ids
+    num_classes = Train_Dataset(train_val = 'train',
+                                data_dir= opt.data_dir, 
+                                dataset_name = opt.dataset_name).num_ids
         
-    train_dataloaders = {x: DataLoader(Train_Dataset(train_val = x),
+    train_dataloaders = {x: DataLoader(Train_Dataset(train_val = x,
+                                                     data_dir= opt.data_dir, 
+                                                     dataset_name = opt.dataset_name),
                                        batch_size=opt.batch_size,
                                        shuffle=True, 
                                        num_workers=opt.num_workers)
@@ -174,9 +178,13 @@ def test(**kwargs):
         
     reiddataset_downloader(opt.data_dir,opt.dataset_name,opt.hdf5)        
         
-    num_classes = Train_Dataset(train_val = 'train').num_ids
+    num_classes = Train_Dataset(train_val = 'train',
+                                data_dir= opt.data_dir, 
+                                dataset_name = opt.dataset_name).num_ids
     
-    test_dataloaders = {x: DataLoader(Test_Dataset(query_gallery = x),
+    test_dataloaders = {x: DataLoader(Test_Dataset(query_gallery = x,
+                                                   data_dir= opt.data_dir, 
+                                                   dataset_name = opt.dataset_name),
                                        batch_size=opt.batch_size,
                                        shuffle=False,           
                                        num_workers=opt.num_workers)
@@ -201,7 +209,7 @@ def test(**kwargs):
     gallery_feature = all_features['gallery'][0]
     
     print('-'*30)
-    result = ranking(query_feature,gallery_feature)
+    rank = ranking(query_feature,gallery_feature)
     
     print('-'*30)
     query_label = all_features['query'][1]
@@ -211,8 +219,60 @@ def test(**kwargs):
     gallery_cam = all_features['gallery'][2]
     gallery_name = all_features['gallery'][3]
     
-    result,CMC,mAP = evaluate(result,query_label,query_cam,gallery_label,gallery_cam)
+    result,CMC,mAP = evaluate(rank,query_label,query_cam,gallery_label,gallery_cam)
     save_result(result,query_name,gallery_name,CMC,mAP)
+    
+################
+#cross_Test
+################
+def cross_test(**kwargs):
+    opt.parse(kwargs, show_config = True)
+    if opt.hdf5:
+        from datasets import Train_Dataset_HDF5 as Train_Dataset
+        from datasets import Test_Dataset_HDF5 as Test_Dataset
+    else:
+        from datasets import Train_Dataset_IMAGE as Train_Dataset
+        from datasets import Test_Dataset_IMAGE as Test_Dataset
+        
+    reiddataset_downloader(opt.data_dir,opt.dataset_name,opt.hdf5)    
+    reiddataset_downloader(opt.data_dir,opt.cross_dataset,opt.hdf5)  
+        
+    num_classes = Train_Dataset(train_val = 'train',
+                                data_dir= opt.data_dir, 
+                                dataset_name = opt.dataset_name).num_ids
+    
+    test_dataloaders = {x: DataLoader(Test_Dataset(query_gallery = x,
+                                                   data_dir= opt.data_dir, 
+                                                   dataset_name = opt.cross_dataset),
+                                       batch_size=opt.batch_size,
+                                       shuffle=False,           
+                                       num_workers=opt.num_workers)
+                         for x in ['query', 'gallery']}
+    
+    model = getattr(models, opt.model)(num_classes)
+    model.load(opt.load_epoch_label)
+    model.model.fc = nn.Sequential()
+    model.classifier = nn.Sequential()
+    model = model.eval()
+    model = model.cuda()
+    
+    all_features = extract_features(model,test_dataloaders, opt.flip)
+        
+    query_feature = all_features['query'][0]
+    gallery_feature = all_features['gallery'][0]
+    
+    print('-'*30)
+    rank = ranking(query_feature,gallery_feature)
+    
+    print('-'*30)
+    query_label = all_features['query'][1]
+    query_cam = all_features['query'][2]
+    query_name = all_features['query'][3]
+    gallery_label = all_features['gallery'][1]
+    gallery_cam = all_features['gallery'][2]
+    gallery_name = all_features['gallery'][3]
+    
+    result,CMC,mAP = evaluate(rank,query_label,query_cam,gallery_label,gallery_cam)
     
 if __name__=='__main__':
     import fire

@@ -51,9 +51,10 @@ def evaluate(ranking,ql,qc,gl,gc):
     ap = 0.0
     result = []
     print('Calculating CMC and mAP')
+    print(ranking.shape)
     for i in tqdm(range(len(ql))):
         index = ranking[i]
-
+        
         query_index = np.asarray(np.where(np.asarray(gl)==ql[i])).flatten()
         camera_index = np.asarray(np.where(np.asarray(gc)==qc[i])).flatten()
         good_index = np.setdiff1d(query_index, camera_index, assume_unique=True)
@@ -73,8 +74,7 @@ def evaluate(ranking,ql,qc,gl,gc):
         # find good_index index
         ngood = len(good_index)
         mask = np.in1d(index, good_index)
-        rows_good = np.asarray(np.where(mask==True))
-        rows_good = rows_good.flatten()
+        rows_good = np.asarray(np.where(mask==True)).flatten()
 
         cmc_tmp[rows_good[0]:] = 1
         

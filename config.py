@@ -1,7 +1,7 @@
 import warnings
 class DefaultConfig(object):
-    data_dir = './datasets/'
-    #data_dir = '/home/linshan/Datasets'
+    #data_dir = './datasets/'
+    data_dir = '/home/linshan/Datasets'
     dataset_name = 'Market1501'
     batch_size = 32
     num_epochs = 50
@@ -19,8 +19,9 @@ class DefaultConfig(object):
     re_ranking = True
     random_erasing_p = 0
     annotation = None
-    hdf5 = True
+    hdf5 = False
     num_workers = 4
+    cross_dataset = 'DukeMTMC'
 
 def parse(self,kwargs,show_config=False):
     '''
@@ -41,4 +42,3 @@ def parse(self,kwargs,show_config=False):
 
 DefaultConfig.parse = parse
 opt =DefaultConfig()
-default = DefaultConfig()
